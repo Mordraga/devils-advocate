@@ -27,6 +27,16 @@ async function request(path, options = {}) {
   if (!path.startsWith('/public/')) headers['X-Admin-Token'] = getAdminToken();
 
   const res = await fetch(`${API_BASE}${path}`, { credentials: 'include', headers, ...options });
+  if (res.status === 401 && !path.startsWith('/public/')) {
+    // Forget the rejected token, otherwise a typo stays cached in
+    // localStorage and locks the host out; the next click re-prompts.
+    try {
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+    } catch {
+      // storage blocked - nothing cached to forget
+    }
+    throw new Error('admin token rejected - click again to re-enter it');
+  }
   if (!res.ok) {
     throw new Error(`${options.method || 'GET'} ${path} failed: ${res.status}`);
   }
