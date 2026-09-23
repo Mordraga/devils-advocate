@@ -38,7 +38,16 @@ async function request(path, options = {}) {
     throw new Error('admin token rejected - click again to re-enter it');
   }
   if (!res.ok) {
-    throw new Error(`${options.method || 'GET'} ${path} failed: ${res.status}`);
+    // The server explains refusals (e.g. "cannot move from LOBBY to
+    // REVEAL") in `detail` - surface it instead of just the status code.
+    let detail = '';
+    try {
+      const body = await res.json();
+      if (typeof body.detail === 'string') detail = ` - ${body.detail}`;
+    } catch {
+      // no JSON body
+    }
+    throw new Error(`${options.method || 'GET'} ${path} failed: ${res.status}${detail}`);
   }
   return res.status === 204 ? null : res.json();
 }
