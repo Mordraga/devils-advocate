@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contestant Room — Devil's Advocate</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="./css/crypt.css">
+  <link rel="stylesheet" href="./css/game.css">
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="./index.html" class="nav-brand">Devil's Advocate</a>
+      <span class="status-pill" data-status="offline" id="connection-pill">Offline</span>
+    </div>
+  </nav>
+
+  <main class="game-main">
+    <div class="card card-gold fade-up">
+      <div class="field-label">You are</div>
+      <h1 id="contestant-name">—</h1>
+      <div class="field-label" style="margin-top: 1rem;">Assigned stance</div>
+      <h2 id="contestant-stance">Waiting for reveal…</h2>
+    </div>
+
+    <div class="divider">Topic</div>
+    <div class="card fade-up-1">
+      <p id="topic-prompt">The topic hasn't been drawn yet.</p>
+    </div>
+
+    <div class="divider">Phase &amp; Timer</div>
+    <div class="card fade-up-2">
+      <span class="phase-pill" id="phase-pill">Phase: LOBBY</span>
+      <div class="timer-display" id="timer-display">--:--</div>
+    </div>
+
+    <div class="divider">Private Notes</div>
+    <div class="card fade-up-3">
+      <p class="badge" style="margin-bottom: 0.75rem;">Stored only in this browser — never sent anywhere</p>
+      <textarea class="crypt-input" id="private-notes" rows="6" placeholder="Scratch notes for your argument…"></textarea>
+    </div>
+  </main>
+
+  <script type="module" src="./js/play.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,117 @@
+/* Devil's Advocate — layered on crypt.css (spec section 6: Crypt visual
+   design). Shared across all five client surfaces; page-specific rules
+   are scoped with a body class instead of separate files, since the
+   overrides are small (mainly overlay's transparency). */
+
+body { padding-top: 3.5rem; }
+
+.game-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* ── PHASE / CONNECTION STATUS ──
+   Text-labeled, never color-only (spec section 6 accessibility). */
+.phase-pill, .status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+}
+
+.status-pill[data-status="online"] { border-color: var(--gold-dim); color: var(--gold); }
+.status-pill[data-status="connecting"] { border-color: var(--border2); color: var(--text-dim); }
+.status-pill[data-status="stale"], .status-pill[data-status="offline"] {
+  border-color: var(--accent2); color: var(--no-text);
+}
+
+/* ── STANCE CARDS ── */
+.stance-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin: 1.5rem 0; }
+
+.stance-card { text-align: center; }
+
+.stance-card .stance-side {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.stance-card .stance-position { font-size: 1.2rem; color: var(--gold); margin-bottom: 0.5rem; }
+
+.stance-card .contestant-name { font-style: italic; color: var(--text); }
+
+@media (max-width: 680px) {
+  .stance-grid { grid-template-columns: 1fr; }
+}
+
+/* ── TIMER ── */
+.timer-display {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  color: var(--gold-pale);
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+/* ── EVENT LOG (host panel) ── */
+.event-log {
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.event-log li {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0;
+  color: var(--text-dim);
+}
+
+.event-log li .event-actor { color: var(--gold); font-style: italic; }
+
+/* ── HOST CONTROL GROUPS ── */
+.control-group { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0; }
+
+/* ── OBS OVERLAY MODE ──
+   Overlay must render on a transparent OBS browser source (spec 5.B). */
+body.overlay-page, body.overlay-page .game-main { background: transparent; padding-top: 0; }
+body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
+
+.overlay-frame {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+/* ── STALE STATE INDICATOR ──
+   Kept outside the broadcast-safe crop (spec section 12). */
+.stale-indicator {
+  position: fixed;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.6rem;
+}
+
+/* ── REDUCED MOTION (spec section 6) ── */
+@media (prefers-reduced-motion: reduce) {
+  .fade-up, .fade-up-1, .fade-up-2, .fade-up-3, .fade-up-4, .fade-up-5 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

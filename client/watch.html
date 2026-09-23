@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch — Devil's Advocate</title>
+  <meta name="description" content="Follow the debate live: topic, sides, timer, and audience sway.">
+  <link rel="stylesheet" href="./css/crypt.css">
+  <link rel="stylesheet" href="./css/game.css">
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="./index.html" class="nav-brand">Devil's Advocate</a>
+      <span class="status-pill" data-status="offline" id="connection-pill">Offline</span>
+    </div>
+  </nav>
+
+  <!-- Mirrors overlay.html (spec section 5.D) and is driven by the same
+       overlay.js renderer — same element ids, just with visible nav/footer
+       and no transparency, since this isn't an OBS browser source. -->
+  <main class="game-main overlay-frame" id="overlay-frame">
+
+    <div id="overlay-standby">
+      <div class="page-hero-sigil">⸸ ✦ ⸸</div>
+      <h2>The Cauldron Simmers</h2>
+      <p>No round is live right now.</p>
+    </div>
+
+    <div id="overlay-topic" hidden>
+      <h3>Tonight's Topic</h3>
+      <h1 id="overlay-topic-prompt">—</h1>
+    </div>
+
+    <div id="overlay-sides" class="stance-grid" hidden>
+      <div class="stance-card card card-accent">
+        <div class="stance-side">Side A</div>
+        <div class="stance-position" id="overlay-side-a">—</div>
+        <div class="contestant-name" id="overlay-contestant-a">—</div>
+      </div>
+      <div class="stance-card card card-gold">
+        <div class="stance-side">Side B</div>
+        <div class="stance-position" id="overlay-side-b">—</div>
+        <div class="contestant-name" id="overlay-contestant-b">—</div>
+      </div>
+    </div>
+
+    <div id="overlay-timer" hidden>
+      <h3 id="overlay-phase-label">Preparation</h3>
+      <div class="timer-display" id="overlay-timer-display">--:--</div>
+    </div>
+
+    <div id="overlay-results" hidden>
+      <h3>Audience Sway</h3>
+      <h1 id="overlay-winner">—</h1>
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="bar"></div>
+    <div class="footer-links">
+      <a href="https://mordraga.me/">Home</a>
+      <a href="https://mordraga.me/connect/">Connect</a>
+    </div>
+    <div class="footer-copy">The Crypt · Devil's Advocate · ©2026</div>
+  </footer>
+
+  <script type="module" src="./js/overlay.js"></script>
+
+</body>
+</html>

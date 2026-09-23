@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Devil's Advocate — Overlay</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="./css/crypt.css">
+  <link rel="stylesheet" href="./css/game.css">
+</head>
+<body class="overlay-page">
+
+  <div class="overlay-frame" id="overlay-frame">
+
+    <div id="overlay-standby">
+      <div class="page-hero-sigil">⸸ ✦ ⸸</div>
+      <h2>The Cauldron Simmers</h2>
+    </div>
+
+    <div id="overlay-topic" hidden>
+      <h3>Tonight's Topic</h3>
+      <h1 id="overlay-topic-prompt">—</h1>
+    </div>
+
+    <div id="overlay-sides" class="stance-grid" hidden>
+      <div class="stance-card card card-accent">
+        <div class="stance-side">Side A</div>
+        <div class="stance-position" id="overlay-side-a">—</div>
+        <div class="contestant-name" id="overlay-contestant-a">—</div>
+      </div>
+      <div class="stance-card card card-gold">
+        <div class="stance-side">Side B</div>
+        <div class="stance-position" id="overlay-side-b">—</div>
+        <div class="contestant-name" id="overlay-contestant-b">—</div>
+      </div>
+    </div>
+
+    <div id="overlay-timer" hidden>
+      <h3 id="overlay-phase-label">Preparation</h3>
+      <div class="timer-display" id="overlay-timer-display">--:--</div>
+    </div>
+
+    <div id="overlay-poll-indicator" hidden>
+      <span class="phase-pill">Poll Open — Vote in Chat</span>
+    </div>
+
+    <div id="overlay-results" hidden>
+      <h3>Audience Sway</h3>
+      <h1 id="overlay-winner">—</h1>
+    </div>
+
+    <div id="overlay-technical-pause" hidden>
+      <h2>Technical Pause</h2>
+    </div>
+
+  </div>
+
+  <div class="status-pill stale-indicator" data-status="offline" id="connection-pill" hidden>Reconnecting…</div>
+
+  <script type="module" src="./js/overlay.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,350 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+
+:root {
+  --black:     #080808;
+  --deep:      #0f0d0f;
+  --surface:   #141014;
+  --surface2:  #1a141a;
+  --border:    #2a1f2a;
+  --border2:   #3a2a3a;
+  --accent:    #8b1a1a;
+  --accent2:   #6a1212;
+  --gold:      #c9a84c;
+  --gold-dim:  #8a6e2e;
+  --gold-pale: #e8d49a;
+  --text:      #d4c9d4;
+  --text-dim:  #7a6d7a;
+  --text-mute: #4a3f4a;
+  --yes-text:  #7fc97f;
+  --no-text:   #c97f7f;
+  --maybe-text:#c9a84c;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--text);
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── TYPOGRAPHY ── */
+.cinzel { font-family: 'Cinzel Decorative', serif; }
+
+h1, h2, h3 { font-family: 'Cinzel Decorative', serif; letter-spacing: 0.06em; }
+
+h1 { font-size: clamp(1.4rem, 4vw, 2.2rem); color: var(--gold); }
+h2 { font-size: clamp(1rem, 2.5vw, 1.4rem); color: var(--gold); }
+h3 { font-size: clamp(0.75rem, 1.5vw, 0.9rem); color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; }
+
+p { font-size: clamp(0.9rem, 1.5vw, 1.05rem); color: var(--text); }
+
+a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--gold-pale); }
+
+/* ── GRADIENT BAR ── */
+.bar {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--gold), var(--accent), transparent);
+}
+
+.bar-thin {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+}
+
+/* ── SIGIL ── */
+.sigil {
+  font-size: 1rem;
+  color: var(--accent);
+  letter-spacing: 0.5em;
+  display: block;
+  text-align: center;
+}
+
+/* ── LAYOUT ── */
+.container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.section { padding: 4rem 0; }
+.section-sm { padding: 2rem 0; }
+
+/* ── NAV ── */
+.site-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(8,8,8,0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.nav-brand {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.5rem;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover, .nav-links a.active { color: var(--gold); }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-block;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  padding: 0.75rem 1.75rem;
+  border: 1px solid;
+  background: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.btn-gold {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+.btn-gold:hover {
+  background: #1a1408;
+  border-color: var(--gold);
+  color: var(--gold-pale);
+}
+
+.btn-accent {
+  border-color: var(--accent2);
+  color: var(--no-text);
+}
+.btn-accent:hover {
+  background: #150808;
+  border-color: var(--accent);
+  color: #e09f9f;
+}
+
+.btn-ghost {
+  border-color: var(--border2);
+  color: var(--text-dim);
+}
+.btn-ghost:hover {
+  background: var(--surface);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--deep);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  position: relative;
+}
+
+.card-accent {
+  border-top: 2px solid var(--accent);
+}
+
+.card-gold {
+  border-top: 2px solid var(--gold-dim);
+}
+
+/* ── GRID ── */
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+
+@media (max-width: 680px) {
+  .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  .nav-links { gap: 1rem; }
+  .nav-links a { font-size: 0.45rem; }
+}
+
+/* ── FOOTER ── */
+.site-footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  padding: 2rem 1.5rem;
+}
+
+.footer-sigil { font-size: 0.8rem; color: var(--accent); letter-spacing: 0.5em; margin-bottom: 0.5rem; }
+
+.footer-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.footer-links a {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+.footer-links a:hover { color: var(--gold); }
+
+.footer-copy {
+  font-size: 0.6rem;
+  color: var(--text-mute);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── FORM ELEMENTS ── */
+.crypt-input {
+  width: 100%;
+  background: var(--black);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.crypt-input:focus { border-color: var(--gold-dim); }
+.crypt-input::placeholder { color: var(--text-mute); font-style: italic; }
+
+.field-label {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.45rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+/* ── DIVIDER ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  color: var(--text-mute);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── BADGE ── */
+.badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-style: italic;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+}
+
+.badge-gold { border-color: var(--gold-dim); color: var(--gold); }
+.badge-accent { border-color: var(--accent2); color: var(--no-text); }
+
+/* ── PATH TAGS (home + services) ── */
+.path-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+}
+
+/* ── PAGE HERO (connect + services) ── */
+.page-hero {
+  padding: 8rem 1.5rem 4rem;
+  text-align: center;
+  position: relative;
+}
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(139,26,26,0.10) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.page-hero-sigil {
+  font-size: 1rem;
+  color: var(--accent);
+  letter-spacing: 0.6em;
+  margin-bottom: 1.5rem;
+}
+
+.page-hero h1 { margin-bottom: 0.75rem; }
+
+.page-hero .subtitle {
+  font-size: 1.05rem;
+  font-style: italic;
+  color: var(--text-dim);
+  margin: 0 auto;
+}
+
+/* ── UTILITIES ── */
+.bar-absolute { position: absolute; top: 0; left: 0; right: 0; }
+
+.btn-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+.site-footer .bar { margin-bottom: 1.5rem; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up { animation: fadeUp 0.6s ease forwards; }
+.fade-up-1 { animation-delay: 0.1s; opacity: 0; animation-fill-mode: forwards; animation-name: fadeUp; animation-duration: 0.6s; }
+.fade-up-2 { animation-delay: 0.25s; opacity: 0; animation-fill-mode: forwards; animation-name: fadeUp; animation-duration: 0.6s; }
+.fade-up-3 { animation-delay: 0.4s; opacity: 0; animation-fill-mode: forwards; animation-name: fadeUp; animation-duration: 0.6s; }
+.fade-up-4 { animation-delay: 0.55s; opacity: 0; animation-fill-mode: forwards; animation-name: fadeUp; animation-duration: 0.6s; }
+.fade-up-5 { animation-delay: 0.7s; opacity: 0; animation-fill-mode: forwards; animation-name: fadeUp; animation-duration: 0.6s; }

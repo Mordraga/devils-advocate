@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Panel — Devil's Advocate</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="./css/crypt.css">
+  <link rel="stylesheet" href="./css/game.css">
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="./index.html" class="nav-brand">Devil's Advocate</a>
+      <ul class="nav-links">
+        <li><a href="./host.html" class="active">Host</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="game-main">
+    <h1>Host Control Panel</h1>
+    <p class="badge badge-accent" style="margin-top: 0.5rem;">Private surface — not for stream display</p>
+
+    <div class="divider">Session</div>
+    <div class="card fade-up">
+      <div class="control-group">
+        <button class="btn btn-gold" id="btn-create-session">Create Session</button>
+        <button class="btn btn-ghost" id="btn-resume-session">Resume Session</button>
+        <button class="btn btn-ghost" id="btn-archive-session">Archive Session</button>
+      </div>
+      <div class="control-group">
+        <span class="status-pill" data-status="offline" id="connection-pill">Offline</span>
+        <span class="phase-pill" id="phase-pill">Phase: LOBBY</span>
+      </div>
+    </div>
+
+    <div class="divider">Contestants</div>
+    <div class="card fade-up-1">
+      <div class="stance-grid">
+        <div>
+          <label class="field-label" for="input-contestant-a">Seat One</label>
+          <input class="crypt-input" id="input-contestant-a" placeholder="Display name">
+        </div>
+        <div>
+          <label class="field-label" for="input-contestant-b">Seat Two</label>
+          <input class="crypt-input" id="input-contestant-b" placeholder="Display name">
+        </div>
+      </div>
+      <div class="control-group">
+        <button class="btn btn-ghost" id="btn-save-contestants">Save Contestants</button>
+      </div>
+    </div>
+
+    <div class="divider">Topic &amp; Sides</div>
+    <div class="card fade-up-2">
+      <div class="control-group">
+        <button class="btn btn-gold" id="btn-draw-topic">Draw Topic</button>
+        <button class="btn btn-gold" id="btn-assign-sides">Assign Sides</button>
+        <button class="btn btn-accent" id="btn-reveal">Reveal</button>
+      </div>
+    </div>
+
+    <div class="divider">Phase &amp; Timer</div>
+    <div class="card fade-up-3">
+      <div class="control-group">
+        <button class="btn btn-ghost" id="btn-phase-back">◂ Previous Phase</button>
+        <button class="btn btn-gold" id="btn-phase-advance">Advance Phase ▸</button>
+      </div>
+      <div class="control-group">
+        <div>
+          <label class="field-label" for="input-timer-minutes">Minutes</label>
+          <input class="crypt-input" id="input-timer-minutes" type="number" min="1" value="15" style="max-width: 100px;">
+        </div>
+        <button class="btn btn-ghost" id="btn-timer-start">Start / Resume Timer</button>
+        <button class="btn btn-ghost" id="btn-timer-pause">Pause Timer</button>
+      </div>
+      <div class="timer-display" id="timer-display">--:--</div>
+    </div>
+
+    <div class="divider">Polls</div>
+    <div class="card fade-up-4">
+      <div class="stance-grid">
+        <div>
+          <label class="field-label" for="input-opening-a">Opening — Side A %</label>
+          <input class="crypt-input" id="input-opening-a" type="number" min="0" max="100">
+        </div>
+        <div>
+          <label class="field-label" for="input-opening-b">Opening — Side B %</label>
+          <input class="crypt-input" id="input-opening-b" type="number" min="0" max="100">
+        </div>
+      </div>
+      <div class="stance-grid">
+        <div>
+          <label class="field-label" for="input-closing-a">Closing — Side A %</label>
+          <input class="crypt-input" id="input-closing-a" type="number" min="0" max="100">
+        </div>
+        <div>
+          <label class="field-label" for="input-closing-b">Closing — Side B %</label>
+          <input class="crypt-input" id="input-closing-b" type="number" min="0" max="100">
+        </div>
+      </div>
+      <div class="control-group">
+        <button class="btn btn-gold" id="btn-finalize">Finalize &amp; Reveal Winner</button>
+        <button class="btn btn-accent" id="btn-void">Void Round</button>
+        <button class="btn btn-accent" id="btn-reroll">Reroll</button>
+      </div>
+    </div>
+
+    <div class="divider">Show URLs</div>
+    <div class="card fade-up-5">
+      <div class="control-group">
+        <button class="btn btn-ghost" data-copy-url="overlay">Copy OBS Overlay URL</button>
+        <button class="btn btn-ghost" data-copy-url="watch">Copy Audience URL</button>
+        <button class="btn btn-accent" id="btn-emergency-hide">Emergency Hide Overlay</button>
+      </div>
+      <div class="control-group">
+        <button class="btn btn-ghost" id="btn-invite-one">Invite Contestant One</button>
+        <button class="btn btn-ghost" id="btn-invite-two">Invite Contestant Two</button>
+      </div>
+      <p class="badge" style="margin-top: 0.75rem;">Each invite link is single-purpose and expires — see spec section 10.</p>
+    </div>
+
+    <div class="divider">Event Log</div>
+    <div class="card">
+      <ul class="event-log" id="event-log">
+        <li>No events yet.</li>
+      </ul>
+    </div>
+  </main>
+
+  <script type="module" src="./js/host.js"></script>
+
+</body>
+</html>
