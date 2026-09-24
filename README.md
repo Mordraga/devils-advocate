@@ -57,8 +57,10 @@ The full loop works end to end in a real browser (see Tests below).
   do next. Step one is inviting - *Start a session* creates two invite links,
   contestants pick their own names when they join, and the host sees who has
   arrived. One big button then moves through: draw topic & sides, reveal,
-  start prep, open the opening poll (enter the result, autofilled to total
-  100), debate, closing poll, announce the winner, next round. The host can see
+  start prep (the audience's opening vote opens with it, so viewers vote while
+  contestants prepare), then "close voting & start debate" (the tally is
+  recorded for you; typing a result by hand is the fallback, autofilled to total
+  100), closing vote, announce the winner, next round. The host can see
   the topic and sides before the audience does. Rarely-needed controls (back a
   phase, void, clear polls, emergency hide) sit under "More controls". A
   refresh resumes the session. When a round ends the host chooses: **New round,

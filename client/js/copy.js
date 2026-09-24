@@ -2,18 +2,17 @@
 // the wording and the "did I win" logic can be checked without a browser
 // (see client/tests/copy.test.mjs).
 
-export const STEPS = ['Lobby', 'Locked', 'Reveal', 'Prep', 'Opening vote', 'Debate', 'Final vote', 'Results'];
+export const STEPS = ['Lobby', 'Locked', 'Reveal', 'Prep + vote', 'Debate', 'Final vote', 'Results'];
 
 const PHASE_STEP = {
   LOBBY: 0,
   TOPIC_LOCKED: 1,
   REVEAL: 2,
   PREPARATION: 3,
-  OPENING_POLL: 4,
-  DEBATE: 5,
-  CLOSING_POLL: 6,
-  RESULTS: 7,
-  ARCHIVED: 7,
+  DEBATE: 4,
+  CLOSING_POLL: 5,
+  RESULTS: 6,
+  ARCHIVED: 6,
 };
 
 export function stepIndex(phase) {
@@ -120,16 +119,8 @@ export function describePhase(ctx) {
         step,
         tone: 'go',
         headline: 'Prep time',
-        body: 'Build your argument for your side. Jot ideas in the notes box below. The debate starts when the host says so.',
+        body: `Build your argument for your side. Jot ideas in the notes box below. Chat is voting on their phones while you prepare - that sets the starting point. The debate starts when the host says so.${votes}`,
         timerLabel: 'Prep time left',
-      };
-    case 'OPENING_POLL':
-      return {
-        step,
-        tone: 'poll',
-        headline: 'Chat is voting',
-        body: `The audience is voting on their phones. This sets the starting point - the debate begins right after.${votes}`,
-        timerLabel: null,
       };
     case 'DEBATE':
       return {

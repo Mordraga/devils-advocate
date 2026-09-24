@@ -114,7 +114,7 @@ async function newPage(browser, label, viewport) {
     check((await host.$$('#now-invites .invite-row')).length === 2, 'two invite rows are shown as step one');
     check(await host.$eval('#btn-primary', (b) => b.disabled), 'deal is locked until both contestants join');
     check((await text(host, '#now-hint')).includes('Waiting for'), 'the hint says who we are waiting for');
-    check((await text(host, '#now-step')) === 'Step 1 of 8', 'step counter reads 1 of 8');
+    check((await text(host, '#now-step')) === 'Step 1 of 7', 'step counter reads 1 of 7');
     await shot(host, 'host-invite-step');
 
     // The copy button either writes to the clipboard (flashes "Copied") or,
@@ -237,16 +237,16 @@ async function newPage(browser, label, viewport) {
 
     // ---------------------------------------------------------- opening vote
     console.log('\nROUND 1 - AUDIENCE: opening vote');
-    await clickPrimary();
-    await title('Opening vote');
+    await title('Preparation and opening vote'); // voting opened the moment prep started
     for (const v of voters) await waitFor(v, () => !document.querySelector('#vote-card').hidden);
-    check(true, 'all three audience phones get the vote buttons the moment the poll opens');
+    check(true, 'all three audience phones get the vote buttons the moment prep starts');
     check((await text(voters[0], '#vote-question')).includes('right now'), 'the opening question is worded for the opening poll');
     const sideAText = await text(voters[0], '#vote-a-text');
     const sideBText = await text(voters[0], '#vote-b-text');
     check(sideAText.length > 0 && sideBText.length > 0 && sideAText !== sideBText, `vote buttons carry the two sides ("${sideAText}" / "${sideBText}")`);
     check((await text(voters[0], '#vote-a-by')).startsWith('argued by'), 'each side says who argues it');
-    check((await text(alice, '#banner-headline')).includes('voting'), 'contestants are told the audience is voting');
+    check((await text(alice, '#banner-body')).includes('voting on their phones'), 'contestants are told the audience is voting while they prepare');
+    check((await text(alice, '#banner-headline')) === 'Prep time' && (await visible(alice, '#timer-card')), 'and they still see the prep clock');
     await waitFor(overlay, () => !document.querySelector('#overlay-poll-indicator').hidden);
     check((await text(overlay, '#overlay-poll-join')).includes(code), 'the stream overlay shows where to vote, with the room code');
     check((await text(overlay, '#overlay-poll-count')).includes('Waiting'), 'and that no votes are in yet');
@@ -335,15 +335,13 @@ async function newPage(browser, label, viewport) {
     await title('Topic revealed');
     await setMinutes(1);
     await clickPrimary();
-    await title('Contestants are preparing');
-    await clickPrimary();
-    await title('Opening vote');
+    await title('Preparation and opening vote');
 
     allow409 += 1;
     await clickPrimary(); // no votes were cast
     await waitFor(host, () => !document.querySelector('#now-error').hidden);
     check((await text(host, '#now-error')).includes('No votes yet'), 'closing an empty poll is refused with a clear message');
-    check((await text(host, '#now-title')) === 'Opening vote', 'and the host stays on the same step');
+    check((await text(host, '#now-title')) === 'Preparation and opening vote', 'and the host stays on the same step');
 
     await host.click('#manual-poll summary');
     await host.type('#poll-a', '70');

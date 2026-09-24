@@ -7,7 +7,6 @@ export const PHASES = [
   'TOPIC_LOCKED',
   'REVEAL',
   'PREPARATION',
-  'OPENING_POLL',
   'DEBATE',
   'CLOSING_POLL',
   'RESULTS',

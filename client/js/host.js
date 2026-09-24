@@ -194,11 +194,6 @@ const actions = {
     logEvent(`Preparation started (${minutes} min)`);
   },
 
-  async openPoll() {
-    await moveTo('OPENING_POLL');
-    logEvent('Opening vote open');
-  },
-
   async startDebate() {
     const minutes = readMinutes();
     const summary = await recordPoll('opening');
@@ -206,6 +201,14 @@ const actions = {
     await api.startTimer(h.round.id, minutes * 60_000);
     await moveTo('DEBATE');
     logEvent(`Opening vote recorded (${summary}); debate started (${minutes} min)`);
+  },
+
+  async addTime() {
+    const minutes = readMinutes();
+    const h = await current();
+    await api.addTime(h.round.id, minutes * 60_000);
+    await moveTo('DEBATE');
+    logEvent(`Added ${minutes} minutes to the timer`);
   },
 
   async closePoll() {

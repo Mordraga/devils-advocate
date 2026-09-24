@@ -10,8 +10,7 @@ export const STEPS = [
   'Invite',
   'Locked',
   'Reveal',
-  'Prep',
-  'Opening vote',
+  'Prep + opening vote',
   'Debate',
   'Closing vote',
   'Results',
@@ -22,11 +21,10 @@ const PHASE_STEP = {
   TOPIC_LOCKED: 1,
   REVEAL: 2,
   PREPARATION: 3,
-  OPENING_POLL: 4,
-  DEBATE: 5,
-  CLOSING_POLL: 6,
-  RESULTS: 7,
-  ARCHIVED: 7,
+  DEBATE: 4,
+  CLOSING_POLL: 5,
+  RESULTS: 6,
+  ARCHIVED: 6,
 };
 
 export const DEFAULT_MINUTES = { prep: 15, debate: 10 };
@@ -143,18 +141,10 @@ export function describe(host, ui = {}) {
     case 'PREPARATION':
       return {
         ...base,
-        title: 'Contestants are preparing',
-        blurb: 'When the prep timer runs out, or you are ready, open the opening vote.',
-        audience: 'The sides and the prep countdown.',
+        title: 'Preparation and opening vote',
+        blurb: 'Contestants prepare while the audience votes on the watch page. When prep is over, close voting and start the debate - the vote is recorded as the starting point the winner is measured from.',
+        audience: 'The sides and the prep countdown, plus vote buttons on the watch page and the room code and vote count on the overlay.',
         timer: true,
-        primary: { id: 'openPoll', label: 'Open the opening vote', disabled: false, hint: 'Viewers get the vote buttons straight away.' },
-      };
-    case 'OPENING_POLL':
-      return {
-        ...base,
-        title: 'Opening vote',
-        blurb: 'The audience is voting on the watch page. When enough people have voted, close voting and the result is recorded for you. This is the starting point the winner is measured from.',
-        audience: 'Vote buttons on the watch page; the room code and vote count on the overlay.',
         poll: 'opening',
         minutes: { key: 'debate', label: 'Debate minutes', value: DEFAULT_MINUTES.debate },
         primary: {

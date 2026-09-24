@@ -492,6 +492,8 @@ body.ritual-reveal #side-grid .stance-card:nth-child(2) { animation: enter-right
 
 /* preparation, polls, the debate */
 body.ritual-prep #overlay-timer,
+body.ritual-prep #overlay-poll-indicator,
+body.ritual-prep #vote-card,
 body.ritual-prep #timer-card { animation: rise 0.7s ease both; }
 body.ritual-poll #overlay-poll-indicator,
 body.ritual-poll #vote-card,

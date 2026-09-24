@@ -33,11 +33,9 @@ function sectionsForPhase(phase, hidden) {
     case 'REVEAL':
       return ['overlay-topic', 'overlay-sides'];
     case 'PREPARATION':
-      return ['overlay-topic', 'overlay-sides', 'overlay-timer'];
+      return ['overlay-topic', 'overlay-sides', 'overlay-timer', 'overlay-poll-indicator'];
     case 'DEBATE':
       return ['overlay-topic', 'overlay-sides', 'overlay-timer', 'overlay-split'];
-    case 'OPENING_POLL':
-      return ['overlay-topic', 'overlay-sides', 'overlay-poll-indicator'];
     case 'CLOSING_POLL':
       return ['overlay-topic', 'overlay-sides', 'overlay-poll-indicator', 'overlay-split'];
     case 'RESULTS':

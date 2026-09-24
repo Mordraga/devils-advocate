@@ -5,7 +5,7 @@ import { MISSING_INVITE, describeInviteError, describePhase, describeResults, sc
 const results = { openingA: 70, openingB: 30, closingA: 54, closingB: 46, swayA: -16, swayB: 16 };
 
 test('every phase gives a headline and body', () => {
-  const phases = ['LOBBY', 'TOPIC_LOCKED', 'REVEAL', 'PREPARATION', 'OPENING_POLL', 'DEBATE', 'CLOSING_POLL', 'RESULTS'];
+  const phases = ['LOBBY', 'TOPIC_LOCKED', 'REVEAL', 'PREPARATION', 'DEBATE', 'CLOSING_POLL', 'RESULTS'];
   for (const phase of phases) {
     const d = describePhase({ phase, mySide: 'A', opponentName: 'Bob', opponentJoined: true });
     assert.ok(d.headline && d.body, phase);
@@ -17,7 +17,7 @@ test('timers are labelled only for the phases that have one', () => {
   assert.equal(label('PREPARATION'), 'Prep time left');
   assert.equal(label('DEBATE'), 'Debate time left');
   assert.equal(label('REVEAL'), null);
-  assert.equal(label('OPENING_POLL'), null);
+  assert.equal(label('CLOSING_POLL'), null);
 });
 
 test('lobby tells you whether your opponent is here', () => {
@@ -59,8 +59,9 @@ test('results phase uses the outcome as its headline', () => {
 
 test('step index', () => {
   assert.equal(stepIndex('LOBBY'), 0);
-  assert.equal(stepIndex('DEBATE'), 5);
-  assert.equal(stepIndex('ARCHIVED'), 7);
+  assert.equal(stepIndex('PREPARATION'), 3);
+  assert.equal(stepIndex('DEBATE'), 4);
+  assert.equal(stepIndex('ARCHIVED'), 6);
 });
 
 test('scoreboard lists both sides with the viewer first', () => {

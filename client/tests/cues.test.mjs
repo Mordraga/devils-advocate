@@ -27,9 +27,8 @@ test('drawing a topic: the cauldron draws, then the seal lands', () => {
 test('each forward step has its own cue', () => {
   const step = (from, to) => cuesForChange(snap({ phase: from }), snap({ phase: to }));
   assert.equal(step('TOPIC_LOCKED', 'REVEAL').ritual, 'reveal');
-  assert.deepEqual(names(step('REVEAL', 'PREPARATION')), ['start']);
-  assert.deepEqual(names(step('PREPARATION', 'OPENING_POLL')), ['pollOpen']);
-  assert.deepEqual(names(step('OPENING_POLL', 'DEBATE')), ['gong']);
+  assert.deepEqual(names(step('REVEAL', 'PREPARATION')), ['start', 'pollOpen']); // prep and the opening vote begin together
+  assert.deepEqual(names(step('PREPARATION', 'DEBATE')), ['gong']);
   assert.deepEqual(names(step('DEBATE', 'CLOSING_POLL')), ['pollOpen']);
 });
 
@@ -55,13 +54,13 @@ test('the emergency hide is silent both ways', () => {
 });
 
 test('closing the vote without moving on chimes once', () => {
-  const open = snap({ phase: 'OPENING_POLL', pollOpen: true, pollKind: 'opening', pollTotal: 4 });
-  const closed = snap({ phase: 'OPENING_POLL', pollOpen: false, pollKind: null, pollTotal: 4 });
+  const open = snap({ phase: 'PREPARATION', pollOpen: true, pollKind: 'opening', pollTotal: 4 });
+  const closed = snap({ phase: 'PREPARATION', pollOpen: false, pollKind: null, pollTotal: 4 });
   assert.deepEqual(names(cuesForChange(open, closed)), ['pollClose']);
 });
 
 test('new votes pop only where asked, and only while the poll is open', () => {
-  const a = snap({ phase: 'OPENING_POLL', pollOpen: true, pollKind: 'opening', pollTotal: 1 });
+  const a = snap({ phase: 'PREPARATION', pollOpen: true, pollKind: 'opening', pollTotal: 1 });
   const b = { ...a, pollTotal: 2 };
   assert.deepEqual(names(cuesForChange(a, b, { turnoutPops: true })), ['pop']);
   assert.deepEqual(cuesForChange(a, b).sounds, []);

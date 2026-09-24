@@ -39,21 +39,21 @@ test('lobby: enabled once everyone is in', () => {
 });
 
 test('each phase has exactly one primary action, in order', () => {
-  const phases = ['LOBBY', 'TOPIC_LOCKED', 'REVEAL', 'PREPARATION', 'OPENING_POLL', 'DEBATE', 'CLOSING_POLL', 'RESULTS'];
+  const phases = ['LOBBY', 'TOPIC_LOCKED', 'REVEAL', 'PREPARATION', 'DEBATE', 'CLOSING_POLL', 'RESULTS'];
   const ids = phases.map((p) => describe(host(p)).primary.id);
-  assert.deepEqual(ids, ['deal', 'reveal', 'startPrep', 'openPoll', 'startDebate', 'closePoll', 'finish', 'newRound']);
+  assert.deepEqual(ids, ['deal', 'reveal', 'startPrep', 'startDebate', 'closePoll', 'finish', 'newRound']);
 });
 
 test('step index follows the phase; ARCHIVED shares the results step', () => {
   assert.equal(describe(host('PREPARATION')).index, 3);
-  assert.equal(describe(host('RESULTS')).index, 7);
-  assert.equal(describe(host('ARCHIVED')).index, 7);
+  assert.equal(describe(host('RESULTS')).index, 6);
+  assert.equal(describe(host('ARCHIVED')).index, 6);
 });
 
 test('phases that need inputs ask for them', () => {
   assert.equal(describe(host('REVEAL')).minutes.key, 'prep');
-  assert.equal(describe(host('OPENING_POLL')).poll, 'opening');
-  assert.equal(describe(host('OPENING_POLL')).minutes.key, 'debate');
+  assert.equal(describe(host('PREPARATION')).poll, 'opening');
+  assert.equal(describe(host('PREPARATION')).minutes.key, 'debate');
   assert.equal(describe(host('CLOSING_POLL')).poll, 'closing');
   assert.equal(describe(host('PREPARATION')).timer, true);
   assert.equal(describe(host('DEBATE')).timer, true);
@@ -69,7 +69,7 @@ test('unjoined seats read as a placeholder, joined seats as their name', () => {
 });
 
 test('poll labels pair each side with who argues it', () => {
-  const h = host('OPENING_POLL', {
+  const h = host('PREPARATION', {
     topic: { sideA: 'White and gold', sideB: 'Blue and black' },
     contestants: [seat('one', 'Alice', true, 'B'), seat('two', 'Bob', true, 'A')],
   });

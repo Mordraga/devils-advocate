@@ -18,8 +18,8 @@ test('the host sees turnout as a plain count', () => {
   assert.equal(turnoutHint(37), '37 votes in so far.');
 });
 
-test('opening vote: closing voting is the primary action and shows turnout', () => {
-  const d = describe(host('OPENING_POLL', { kind: 'opening', total: 12 }));
+test('prep + opening vote: closing voting is the primary action and shows turnout', () => {
+  const d = describe(host('PREPARATION', { kind: 'opening', total: 12 }));
   assert.equal(d.primary.id, 'startDebate');
   assert.equal(d.primary.label, 'Close voting & start debate');
   assert.equal(d.primary.hint, '12 votes in so far.');
@@ -34,7 +34,7 @@ test('closing vote: closing voting reveals the winner', () => {
 });
 
 test('the host never gets a disabled button for voting - zero votes is handled when clicked', () => {
-  assert.equal(describe(host('OPENING_POLL', { kind: 'opening', total: 0 })).primary.disabled, false);
+  assert.equal(describe(host('PREPARATION', { kind: 'opening', total: 0 })).primary.disabled, false);
 });
 
 test('a turnout figure for a different poll is not shown', () => {
@@ -43,12 +43,12 @@ test('a turnout figure for a different poll is not shown', () => {
 });
 
 test('contestants are told the audience is voting, with turnout', () => {
-  const opening = describePhase({ phase: 'OPENING_POLL', pollTotal: 3 });
-  assert.match(opening.body, /audience is voting/);
+  const opening = describePhase({ phase: 'PREPARATION', pollTotal: 3 });
+  assert.match(opening.body, /voting on their phones/);
   assert.match(opening.body, /3 votes in so far/);
 
   const closing = describePhase({ phase: 'CLOSING_POLL', pollTotal: 1 });
   assert.match(closing.body, /1 vote in so far/);
 
-  assert.doesNotMatch(describePhase({ phase: 'OPENING_POLL', pollTotal: 0 }).body, /in so far/);
+  assert.doesNotMatch(describePhase({ phase: 'PREPARATION', pollTotal: 0 }).body, /in so far/);
 });

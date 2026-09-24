@@ -133,26 +133,28 @@ async function part2(browser) {
   const cards = await page.$$eval('#overlay-sides .stance-card', (els) => els.map((e) => [getComputedStyle(e).opacity, getComputedStyle(e).transform]));
   check(cards.length === 2 && cards.every(([o, t]) => o === '1' && (t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)')), 'both side cards settle in place');
 
-  // Voting.
+  // Prep and the opening vote begin together: the prep bell, then the voting chime.
   before = await oscillators();
-  await patch({ phase: 'OPENING_POLL', poll: { kind: 'opening', open: true, total: 0 } });
-  await sleep(250);
-  check(/ritual-poll/.test(await bodyClass()) && (await oscillators()) > before, 'opening the poll chimes and animates');
+  await patch({
+    phase: 'PREPARATION',
+    poll: { kind: 'opening', open: true, total: 0 },
+    timer: { startedAt: new Date().toISOString(), endsAt: new Date(Date.now() + 16000).toISOString(), pausedAt: null, remainingMs: null },
+    serverOffsetMs: 0,
+  });
+  await sleep(300);
+  check(/ritual-prep/.test(await bodyClass()), 'starting prep starts the prep ritual');
+  await sleep(1500); // the voting chime follows the bell by about a second
+  check((await oscillators()) - before >= 10, 'the prep bell and the voting chime both sound');
   before = await oscillators();
   await patch({ poll: { kind: 'opening', open: true, total: 1 } });
   await sleep(150);
   check((await oscillators()) > before, 'a new vote pops on the overlay');
-  before = await oscillators();
-  await patch({ poll: { kind: null, open: false, total: 1 } });
-  await sleep(250);
-  check((await oscillators()) > before, 'closing the vote chimes');
+  check(await page.$eval('#overlay-poll-indicator', (e) => !e.hidden) && (await page.$eval('#overlay-timer', (e) => !e.hidden)), 'the overlay shows the vote count and the prep clock together');
 
-  // The countdown.
-  await patch({ phase: 'PREPARATION', timer: { startedAt: new Date().toISOString(), endsAt: new Date(Date.now() + 12500).toISOString(), pausedAt: null, remainingMs: null }, serverOffsetMs: 0 });
-  await sleep(500);
-  check(!/timer-low/.test(await bodyClass()), 'no warning at 12 seconds');
+  // The countdown (still running from the start of prep).
+  check(!/timer-low/.test(await bodyClass()), 'no warning with plenty of time left');
   before = await oscillators();
-  await sleep(3200);
+  await sleep(6000);
   check(/timer-low/.test(await bodyClass()), 'the last ten seconds turn the clock red');
   check((await oscillators()) - before >= 2, 'the last seconds tick');
   await shot(page, '04-timer-low');

@@ -26,8 +26,8 @@ export function snapshot(state) {
 const ENTERING = {
   TOPIC_LOCKED: { ritual: 'lock', sounds: [{ name: 'draw', delay: 0 }, { name: 'seal', delay: 0.9 }] },
   REVEAL: { ritual: 'reveal', sounds: [{ name: 'reveal', delay: 0 }] },
-  PREPARATION: { ritual: 'prep', sounds: [{ name: 'start', delay: 0 }] },
-  OPENING_POLL: { ritual: 'poll', sounds: [{ name: 'pollOpen', delay: 0 }] },
+  // Prep and the opening vote start together: the bell, then the voting chime.
+  PREPARATION: { ritual: 'prep', sounds: [{ name: 'start', delay: 0 }, { name: 'pollOpen', delay: 1.1 }] },
   DEBATE: { ritual: 'debate', sounds: [{ name: 'gong', delay: 0 }] },
   CLOSING_POLL: { ritual: 'poll', sounds: [{ name: 'pollOpen', delay: 0 }] },
 };
