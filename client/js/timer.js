@@ -24,3 +24,30 @@ export function formatClock(ms) {
   const seconds = String(totalSeconds % 60).padStart(2, '0');
   return `${minutes}:${seconds}`;
 }
+
+/**
+ * How much time the host just added between two timer snapshots (ms), or 0.
+ * A restart or resume gets a fresh `startedAt` and doesn't count; nor does
+ * pausing. A clock that had already run out counts from now, not from the past.
+ * Changes under five seconds are ignored as rounding noise.
+ */
+export function addedTimeMs(prev, next, nowMs = Date.now()) {
+  if (!prev || !next || prev.startedAt == null || next.startedAt == null) return 0;
+  if (prev.startedAt !== next.startedAt) return 0;
+
+  let added = 0;
+  if (prev.pausedAt != null && next.pausedAt != null) {
+    added = (next.remainingMs ?? 0) - (prev.remainingMs ?? 0);
+  } else if (prev.pausedAt == null && next.pausedAt == null) {
+    added = parseTime(next.endsAt) - Math.max(parseTime(prev.endsAt), nowMs);
+  }
+  return added >= 5000 ? added : 0;
+}
+
+/** "+5 min" for whole minutes, otherwise "+0:30" / "+1:30". */
+export function formatAdded(ms) {
+  const minutes = Math.round(ms / 60000);
+  if (minutes >= 1 && Math.abs(ms - minutes * 60000) < 1500) return `+${minutes} min`;
+  const total = Math.round(ms / 1000);
+  return `+${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}

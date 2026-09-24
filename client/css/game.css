@@ -566,3 +566,21 @@ main.auth-locked > *:not(.auth-gate) { display: none !important; }
 .invite-flourish:empty { display: none; }
 .timer-adds { display: flex; justify-content: center; gap: 0.75rem; margin-top: 0.5rem; }
 .timer-adds .btn { margin-top: 0; }
+
+/* "+5 min" floating up from the clock when the host adds time (timerpop.js) */
+.time-pop {
+  position: fixed; z-index: 60; pointer-events: none; white-space: nowrap;
+  font-family: 'Cinzel Decorative', serif; font-size: 1.7rem; letter-spacing: 0.06em;
+  color: var(--gold); text-shadow: 0 0 14px rgba(201, 168, 76, 0.75), 0 2px 6px rgba(0, 0, 0, 0.8);
+  animation: time-pop 1.9s ease-out forwards;
+}
+body.overlay-page .time-pop { font-size: 3.2rem; }
+@keyframes time-pop {
+  0% { opacity: 0; transform: translate(-50%, 8px) scale(0.8); }
+  14% { opacity: 1; transform: translate(-50%, -8px) scale(1.12); }
+  100% { opacity: 0; transform: translate(-50%, -64px) scale(1); }
+}
+@keyframes time-pop-fade { 0% { opacity: 0; } 14% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  body:not(.overlay-page) .time-pop { animation: time-pop-fade 1.9s linear forwards; transform: translate(-50%, -12px); }
+}

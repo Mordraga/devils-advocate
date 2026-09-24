@@ -12,6 +12,7 @@ import { state, subscribe } from './state.js';
 import { cuesForChange, isLowTime, secondsLeft, snapshot, timerCue } from './cues.js';
 import { remainingMs } from './timer.js';
 import * as sound from './sound.js';
+import { startTimerPop } from './timerpop.js';
 
 const RITUAL_MS = 3600;
 const POP_MIN_GAP_MS = 120; // a burst of votes is a patter, not a machine gun
@@ -118,6 +119,7 @@ export function startRitual({ autoplay = false, turnoutPops = false } = {}) {
 
   subscribe(() => onState(turnoutPops));
   setInterval(onClock, 250);
+  startTimerPop();
 
   if (autoplay) {
     // ?sound=off silences an overlay that shouldn't make noise (a second scene, say).

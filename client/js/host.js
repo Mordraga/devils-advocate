@@ -12,6 +12,7 @@ import { formatClock, remainingMs } from './timer.js';
 import { DEFAULT_MINUTES, STEPS, checkPoll, complement, describe, pollSideLabels, seatName } from './guide.js';
 import { copyText, el, flash, renderStepper } from './ui.js';
 import { requireAuth } from './auth.js';
+import { startTimerPop } from './timerpop.js';
 
 const $ = (id) => document.getElementById(id);
 const SAVED_KEY = 'devils-advocate:host-session-id';
@@ -642,6 +643,8 @@ render();
 setInterval(() => {
   if (host) renderTimer(describe(host, ui));
 }, 250);
+
+startTimerPop(); // a "+5 min" floats up from the clock when time is added
 
 // Sign in first, then pick the previous session back up after a refresh.
 requireAuth().then(() => {

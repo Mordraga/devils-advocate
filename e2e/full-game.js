@@ -239,6 +239,10 @@ async function newPage(browser, label, viewport) {
     const clockBefore = secondsOf(await text(alice, '#timer-display'));
     check(await host.$eval('.btn-add-time', (b) => !b.disabled), 'the add-time buttons are enabled once the clock runs');
     await host.click('.btn-add-time[data-minutes="1"]');
+    await waitFor(alice, () => document.querySelector('.time-pop'));
+    check((await text(alice, '.time-pop')) === '+1 min', 'a "+1 min" pops up from the contestant clock');
+    await waitFor(host, () => document.querySelector('.time-pop'));
+    check(true, 'and from the host clock');
     await waitFor(alice, (b) => document.querySelector('#timer-display').textContent.split(':').reduce((m, v) => m * 60 + Number(v), 0) >= b + 55, clockBefore);
     check(true, "adding a minute lengthens the contestants' clock");
     check((await text(host, '#now-error')) === '' || !(await visible(host, '#now-error')), 'with no error on the host page');

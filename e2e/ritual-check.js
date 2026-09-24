@@ -163,6 +163,21 @@ async function part2(browser) {
   check((await oscillators()) - before >= 6, 'time up sounds a gong');
   check(!/timer-low/.test(await bodyClass()), 'the warning clears at zero');
 
+  // The host adds a minute to the clock that has just run out: "+1 min" floats up from it.
+  const expired = await page.evaluate(async () => ({ ...(await import('/js/state.js')).state.timer }));
+  await patch({ timer: { ...expired, endsAt: new Date(Date.now() + 60000).toISOString() } });
+  await sleep(250);
+  const popText = await page.$eval('.time-pop', (e) => e.textContent).catch(() => null);
+  check(popText === '+1 min', `adding time pops "+1 min" from the clock (${popText})`);
+  const aligned = await page.evaluate(() => {
+    const pop = document.querySelector('.time-pop').getBoundingClientRect();
+    const clock = document.querySelector('#overlay-timer-display').getBoundingClientRect();
+    return Math.abs(pop.left + pop.width / 2 - (clock.left + clock.width / 2)) < 6 && pop.bottom <= clock.bottom;
+  });
+  check(aligned, 'and it rises from the clock itself');
+  await sleep(3200);
+  check((await page.$$('.time-pop')).length === 0, 'then it fades away and is gone');
+
   // Winner.
   before = await oscillators();
   await patch({ phase: 'RESULTS', winner: 'A', results: { openingA: 40, openingB: 60, closingA: 62, closingB: 38, swayA: 22, swayB: -22 }, timer: { startedAt: null, endsAt: null, pausedAt: null, remainingMs: null } });
