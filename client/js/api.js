@@ -43,7 +43,13 @@ async function request(path, options = {}) {
     let detail = '';
     try {
       const body = await res.json();
-      if (typeof body.detail === 'string') detail = ` - ${body.detail}`;
+      if (typeof body.detail === 'string') {
+        detail = ` - ${body.detail}`;
+      } else if (Array.isArray(body.detail)) {
+        // FastAPI validation errors: [{ loc: ['body', 'prompt'], msg: '...' }]
+        const parts = body.detail.slice(0, 3).map((d) => `${(d.loc ?? []).slice(1).join('.')}: ${d.msg}`);
+        detail = ` - ${parts.join('; ')}`;
+      }
     } catch {
       // no JSON body
     }
@@ -118,6 +124,15 @@ export const setContestantName = (token, displayName) =>
 
 export const setOverlayVisibility = (sessionId, hidden) =>
   request(`/sessions/${sessionId}/overlay-visibility`, { method: 'POST', body: JSON.stringify({ hidden }) });
+
+// Topic administration (host only).
+export const listTopics = () => request('/topics');
+export const createTopic = (topic) => request('/topics', { method: 'POST', body: JSON.stringify(topic) });
+export const updateTopic = (id, changes) =>
+  request(`/topics/${id}`, { method: 'PATCH', body: JSON.stringify(changes) });
+export const exportTopics = () => request('/topics/export');
+export const importTopics = (topics) =>
+  request('/topics/import', { method: 'POST', body: JSON.stringify({ topics }) });
 
 export const getPublicSession = (code) => request(`/public/sessions/${code}`);
 

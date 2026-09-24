@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Topics — Devil's Advocate</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./css/crypt.css">
+  <link rel="stylesheet" href="./css/game.css">
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="./index.html" class="nav-brand">Devil's Advocate</a>
+      <ul class="nav-links">
+        <li><a href="./host.html">Host</a></li>
+        <li><a href="./topics.html" class="active">Topics</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="game-main topics-main">
+
+    <header class="host-head">
+      <div>
+        <h1>Topics</h1>
+        <p class="session-line" id="topics-summary">Loading…</p>
+      </div>
+      <div class="control-group">
+        <button class="btn btn-gold" id="btn-add" type="button">Add a topic</button>
+        <button class="btn btn-ghost" id="btn-export" type="button">Export</button>
+        <button class="btn btn-ghost" id="btn-import" type="button">Import…</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
+      </div>
+    </header>
+
+    <p class="now-error" id="topics-error" role="alert" hidden></p>
+    <p class="topics-notice" id="topics-notice" role="status" hidden></p>
+
+    <!-- Add / edit form -->
+    <section class="card card-gold topic-form-card" id="form-card" hidden>
+      <h2 id="form-title">Add a topic</h2>
+      <form id="topic-form" novalidate>
+        <div class="form-field">
+          <label class="field-label" for="f-prompt">The question</label>
+          <input class="crypt-input" id="f-prompt" maxlength="200" autocomplete="off">
+          <p class="field-error" id="e-prompt" hidden></p>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label" for="f-explainer">What it means (shown under the question)</label>
+          <textarea class="crypt-input" id="f-explainer" rows="2" maxlength="400"></textarea>
+          <p class="field-hint">One or two sentences so nobody has to ask "wait, what?". Contestants, viewers and the overlay all show this.</p>
+          <p class="field-error" id="e-explainer" hidden></p>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label" for="f-sideA">Side A argues</label>
+            <input class="crypt-input" id="f-sideA" maxlength="120" autocomplete="off">
+            <p class="field-error" id="e-sideA" hidden></p>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="f-sideB">Side B argues</label>
+            <input class="crypt-input" id="f-sideB" maxlength="120" autocomplete="off">
+            <p class="field-error" id="e-sideB" hidden></p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label" for="f-category">Category</label>
+            <input class="crypt-input" id="f-category" list="category-options" autocomplete="off" placeholder="e.g. food_court">
+            <datalist id="category-options"></datalist>
+            <p class="field-error" id="e-category" hidden></p>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="f-weight">Weight (1–10, higher = drawn more often)</label>
+            <input class="crypt-input" id="f-weight" type="number" min="1" max="10" step="1">
+            <p class="field-error" id="e-weight" hidden></p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label" for="f-tags">Tags (comma separated)</label>
+            <input class="crypt-input" id="f-tags" autocomplete="off" placeholder="cursed_pull, food_ontology">
+            <p class="field-error" id="e-tags" hidden></p>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="f-contentWarning">Content warning (optional)</label>
+            <input class="crypt-input" id="f-contentWarning" maxlength="200" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label" for="f-subject">Subject id (optional, for your own filing)</label>
+          <input class="crypt-input" id="f-subject" maxlength="128" autocomplete="off">
+        </div>
+
+        <label class="toggle-row"><input type="checkbox" id="f-enabled"> <span>In rotation (can be drawn)</span></label>
+
+        <ul class="form-warnings" id="form-warnings"></ul>
+
+        <div class="preview" id="preview" aria-label="How it will read on screen">
+          <div class="field-label">Preview</div>
+          <h3 class="preview-prompt" id="preview-prompt"></h3>
+          <p class="topic-explainer" id="preview-explainer"></p>
+          <p class="preview-sides" id="preview-sides"></p>
+        </div>
+
+        <div class="control-group">
+          <button class="btn btn-gold" id="btn-save" type="submit">Save topic</button>
+          <button class="btn btn-ghost" id="btn-cancel" type="button">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Filters -->
+    <section class="card topic-filters">
+      <div class="form-grid filters-grid">
+        <div>
+          <label class="field-label" for="filter-q">Search</label>
+          <input class="crypt-input" id="filter-q" type="search" placeholder="question, explainer, side…" autocomplete="off">
+        </div>
+        <div>
+          <label class="field-label" for="filter-category">Category</label>
+          <select class="crypt-input" id="filter-category"><option value="">All categories</option></select>
+        </div>
+        <div>
+          <label class="field-label" for="filter-status">Status</label>
+          <select class="crypt-input" id="filter-status">
+            <option value="all">All</option>
+            <option value="enabled">In rotation</option>
+            <option value="disabled">Switched off</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <ul class="topic-list" id="topic-list"></ul>
+    <p class="topics-empty" id="topics-empty" hidden>No topics match.</p>
+  </main>
+
+  <script type="module" src="./js/topics.js"></script>
+
+</body>
+</html>

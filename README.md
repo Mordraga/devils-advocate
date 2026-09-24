@@ -23,6 +23,7 @@ phase, or winner; it only renders state the server issues.
 | `client/overlay.html` | Transparent OBS browser source |
 | `client/play.html` | Contestant room (invite-only) |
 | `client/watch.html` | Optional public watch view |
+| `client/topics.html` | Topic admin: add, edit, switch on/off, weight, import/export |
 
 ## Running it locally
 
@@ -75,10 +76,10 @@ Modules: `state.js` (shared pub/sub), `api.js` (REST + snake_case -> camelCase),
 `socket.js` (WebSocket with version-gap resync), `config.js` (API address),
 `voter.js` (anonymous per-browser voter id), `watch.js` / `landing.js` (voting and
 room-code entry),
-`timer.js` (countdown maths), `guide.js` (host step logic) and `copy.js`
-(contestant wording) - the last three are pure and unit-tested.
+`timer.js` (countdown maths), `guide.js` (host step logic), `copy.js`
+(contestant wording) and `topics-logic.js` (topic form rules) - the last four are pure and unit-tested.
 
-Not yet built: topic admin UI, and the "ritualistic" motion design (spec
+Not yet built: the "ritualistic" motion design (spec
 section 6) beyond basic fade-ins.
 
 ## Tests

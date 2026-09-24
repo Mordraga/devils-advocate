@@ -326,3 +326,38 @@ body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
 .manual-poll { margin-top: 0.5rem; }
 .manual-poll summary { color: #b3a6b3; font-size: 1rem; text-transform: none; letter-spacing: 0; font-family: inherit; }
 .manual-poll[open] summary { margin-bottom: 0.75rem; }
+
+/* ── TOPICS ADMIN ── */
+.topics-main .card { margin-bottom: 1.25rem; }
+.topics-notice {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-pale);
+}
+.topic-form-card h2 { margin-bottom: 1rem; }
+.form-field { margin-bottom: 1rem; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.filters-grid { grid-template-columns: 2fr 1fr 1fr; align-items: end; }
+@media (max-width: 680px) { .form-grid, .filters-grid { grid-template-columns: 1fr; } }
+.field-hint { color: #b3a6b3; font-size: 0.95rem; margin-top: 0.35rem; }
+.field-error { color: var(--no-text); font-size: 1rem; margin-top: 0.35rem; }
+.form-warnings { list-style: none; margin: 0.5rem 0 1rem; color: var(--gold-pale); font-style: italic; }
+.toggle-row { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; cursor: pointer; }
+.toggle-row input { width: 1.1rem; height: 1.1rem; accent-color: var(--gold); }
+.preview { margin: 1rem 0 1.25rem; padding: 1rem 1.25rem; border: 1px dashed var(--border2); }
+.preview-prompt { font-size: 1.3rem; color: var(--gold); text-transform: none; letter-spacing: 0.02em; }
+.preview-sides { margin-top: 0.4rem; color: var(--text); }
+
+.topic-list { list-style: none; display: grid; gap: 1rem; padding: 0; }
+.topic-item { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; margin-bottom: 0 !important; }
+.topic-off { opacity: 0.65; }
+.topic-main { flex: 1 1 22rem; }
+.topic-prompt { font-size: 1.15rem; color: var(--gold); text-transform: none; letter-spacing: 0.02em; margin-bottom: 0.3rem; }
+.topic-missing { color: var(--gold-pale); font-style: italic; }
+.topic-sides { color: var(--text); margin: 0.35rem 0 0.6rem; }
+.topic-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.topic-controls { display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start; min-width: 11rem; }
+.weight-row { display: flex; align-items: center; gap: 0.6rem; }
+.weight-select { width: 5rem; }
+.topics-empty { text-align: center; color: #b3a6b3; padding: 2rem 0; font-size: 1.15rem; }
