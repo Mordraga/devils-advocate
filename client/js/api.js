@@ -116,6 +116,10 @@ export const startTimer = (roundId, durationMs) =>
 
 export const pauseTimer = (roundId) => request(`/rounds/${roundId}/timer/pause`, { method: 'POST' });
 
+// "+1 min" / "+5 min": works on a running, paused or just-expired clock.
+export const addTime = (roundId, ms) =>
+  request(`/rounds/${roundId}/timer/add`, { method: 'POST', body: JSON.stringify({ duration_ms: ms }) });
+
 export const recordOpeningPoll = (roundId, a, b) =>
   request(`/rounds/${roundId}/polls/opening`, { method: 'POST', body: JSON.stringify({ a, b }) });
 

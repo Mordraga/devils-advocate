@@ -203,13 +203,6 @@ const actions = {
     logEvent(`Opening vote recorded (${summary}); debate started (${minutes} min)`);
   },
 
-  async addTime() {
-    const minutes = readMinutes();
-    const h = await current();
-    await api.addTime(h.round.id, minutes * 60_000);
-    logEvent(`Added ${minutes} minutes to the timer`);
-  },
-
   async closePoll() {
     await moveTo('CLOSING_POLL');
     logEvent('Closing vote open');
@@ -463,6 +456,8 @@ function renderTimer(d) {
   $('timer-display').textContent = formatClock(remainingMs(timer, host.serverOffsetMs));
   $('btn-timer-toggle').textContent =
     timer.startedAt == null ? 'Start timer' : timer.pausedAt != null ? 'Resume timer' : 'Pause timer';
+  // There's nothing to add time to until the clock has been started.
+  for (const button of document.querySelectorAll('.btn-add-time')) button.disabled = timer.startedAt == null;
 }
 
 // The "or..." choices under the main button (end of a round). Rebuilt only
@@ -570,14 +565,17 @@ $('btn-timer-toggle').addEventListener('click', () =>
   }),
 );
 
-$('btn-add-time').addEventListener('click', () =>
-  runSecondary('Added time to the timer', async () => {
-    const h = await current();
-    const minutes = readMinutes();
-    await api.addTime(h.round.id, minutes * 60_000);
-    logEvent(`Added ${minutes} minutes to the timer`);
-  }),
-);
+// +1 / +5 minutes. Wired by class so a missing button can never stop the rest of
+// the page from loading.
+for (const button of document.querySelectorAll('.btn-add-time')) {
+  const minutes = Number(button.dataset.minutes);
+  button.addEventListener('click', () =>
+    runSecondary(`Added ${minutes} minute${minutes === 1 ? '' : 's'} to the timer`, async () => {
+      const h = await current();
+      await api.addTime(h.round.id, minutes * 60_000);
+    }),
+  );
+}
 
 async function copyShowLink(page, label, button) {
   if (!host) return;

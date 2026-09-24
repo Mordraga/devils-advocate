@@ -234,6 +234,15 @@ async function newPage(browser, label, viewport) {
     await host.click('#btn-timer-toggle');
     await waitFor(alice, () => document.querySelector('#timer-note').hidden);
     check(true, 'resuming clears the paused note');
+    // "+1 min": every contestant's clock grows by a minute.
+    const secondsOf = (t) => t.split(':').reduce((m, v) => m * 60 + Number(v), 0);
+    const clockBefore = secondsOf(await text(alice, '#timer-display'));
+    check(await host.$eval('.btn-add-time', (b) => !b.disabled), 'the add-time buttons are enabled once the clock runs');
+    await host.click('.btn-add-time[data-minutes="1"]');
+    await waitFor(alice, (b) => document.querySelector('#timer-display').textContent.split(':').reduce((m, v) => m * 60 + Number(v), 0) >= b + 55, clockBefore);
+    check(true, "adding a minute lengthens the contestants' clock");
+    check((await text(host, '#now-error')) === '' || !(await visible(host, '#now-error')), 'with no error on the host page');
+    check(await visible(host, '.account-bar'), 'and the host page finished loading (sign-in ran)');
 
     // ---------------------------------------------------------- opening vote
     console.log('\nROUND 1 - AUDIENCE: opening vote');
