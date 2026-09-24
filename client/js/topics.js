@@ -4,6 +4,7 @@
 // (pure, tested); the server stays the real authority.
 
 import * as api from './api.js';
+import { requireAuth } from './auth.js';
 import { el } from './ui.js';
 import {
   emptyForm,
@@ -265,8 +266,8 @@ $('import-file').addEventListener('change', async (event) => {
 
 // ---- start -----------------------------------------------------------------
 
-api
-  .listTopics()
+requireAuth()
+  .then(() => api.listTopics())
   .then((list) => {
     topics = list;
     renderSummary();

@@ -40,8 +40,13 @@ to `http://localhost:8000` by default; to aim any page at another server
 (e.g. Railway) load it once with `?api=https://your-service.up.railway.app`
 (remembered per browser; `?api=reset` clears it). The host page adds that
 to the overlay/watch/invite links it copies, since OBS and contestants
-don't share the host's browser storage. The first mutation prompts for the
-admin token (`ADMIN_SESSION_SECRET`). A refresh resumes the session.
+don't share the host's browser storage. A refresh resumes the session.
+
+Host and Topics pages sit behind a sign-in card (`js/auth.js`): **Log in with
+Twitch** (an allowed account only; the server keeps the session in an HttpOnly
+cookie the page never sees), or "Use the admin token instead"
+(`ADMIN_SESSION_SECRET`, remembered in this browser) as the fallback. The Twitch
+button only appears once the server has its Twitch credentials.
 
 ## Status
 
@@ -103,7 +108,7 @@ audio files. Every effect is a small recipe of oscillators and filtered noise.
   reload the next tap anywhere wakes it up. These pages honour
   `prefers-reduced-motion` (finished frames, no movement).
 
-Not yet built: archive-session UI and host login (Twitch).
+Not yet built: archive-session UI and Twitch EventSub automation (channel-point / poll triggers).
 
 ## Tests
 
@@ -114,6 +119,11 @@ node --test "client/tests/*.test.mjs"     # pure logic: no browser needed
 # (audible, no clipping, dies away) and drives the overlay through a round.
 # Serve client/ (python -m http.server 8080) then:
 node e2e/ritual-check.js http://localhost:8080
+
+# Host sign-in gate + Twitch login round trip, real auth code with a fake Twitch
+# (no database): run `python tests/fake_login_server.py` in draga-server/, serve
+# client/ on :8080, then:
+node e2e/host-login.js
 
 # Two full rounds in real Chrome (host, two contestants, three audience phones,
 # overlay): audience voting, then the by-hand fallback. Needs the server

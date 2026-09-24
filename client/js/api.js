@@ -1,41 +1,59 @@
 // Thin REST wrapper for the Devil's Advocate API (spec section 9).
-// draga-server's host mutations are gated by a shared admin token (an
-// interim MVP mechanism - see draga-server/app/auth/admin.py - a real
-// login flow that sets an HttpOnly cookie is a follow-up). Until that
-// exists, the operator's browser has nowhere else to keep it, so it's
-// stashed in localStorage rather than baked into this file.
+// Host calls are authorised one of two ways (see draga-server/app/auth/admin.py):
+// a Twitch login, which is an HttpOnly cookie this file never sees (the browser
+// sends it because of `credentials: 'include'`), or the shared admin token,
+// which the operator's browser keeps in localStorage. auth.js owns signing in;
+// this file just attaches whichever credentials exist.
 
 import { API_BASE } from './config.js';
 import { parseTime } from './timer.js';
 
 const ADMIN_TOKEN_KEY = 'devils-advocate:admin-token';
 
-function getAdminToken() {
-  let token = localStorage.getItem(ADMIN_TOKEN_KEY);
-  if (!token) {
-    token = window.prompt('Admin token (draga-server ADMIN_SESSION_SECRET):') ?? '';
-    if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token);
+function cachedAdminToken() {
+  try {
+    return localStorage.getItem(ADMIN_TOKEN_KEY);
+  } catch {
+    return null;
   }
-  return token;
+}
+
+export function setAdminToken(token) {
+  try {
+    localStorage.setItem(ADMIN_TOKEN_KEY, token);
+  } catch {
+    // storage blocked - the token only lasts until the page closes
+  }
+}
+
+export function clearAdminToken() {
+  try {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+  } catch {
+    // storage blocked - nothing cached to forget
+  }
 }
 
 async function request(path, options = {}) {
-  // /public/* never needs the admin token (spec section 9/10) - overlay,
-  // watch, and now invite redemption all hit these from a page that has
-  // no host present, so prompting for a credential there would be wrong.
+  // /public/* needs no credentials (spec section 9/10) - overlay, watch and
+  // invite redemption all hit these from pages with no host present.
+  const isPublic = path.startsWith('/public/');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-  if (!path.startsWith('/public/')) headers['X-Admin-Token'] = getAdminToken();
+  if (!isPublic) {
+    // The custom header is what lets the server trust a cookie-authenticated
+    // change: a forged cross-site request can't add it.
+    headers['X-Devils-Advocate'] = '1';
+    const token = cachedAdminToken();
+    if (token) headers['X-Admin-Token'] = token;
+  }
 
   const res = await fetch(`${API_BASE}${path}`, { credentials: 'include', headers, ...options });
-  if (res.status === 401 && !path.startsWith('/public/')) {
-    // Forget the rejected token, otherwise a typo stays cached in
-    // localStorage and locks the host out; the next click re-prompts.
-    try {
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-    } catch {
-      // storage blocked - nothing cached to forget
-    }
-    throw new Error('admin token rejected - click again to re-enter it');
+  if (res.status === 401 && !isPublic) {
+    // Signed out (an expired login, or a rejected token). Forget any cached
+    // token so a typo can't lock the host out, and let auth.js show sign-in.
+    clearAdminToken();
+    window.dispatchEvent(new Event('da-auth-lost'));
+    throw new Error('You are signed out - sign in again to continue');
   }
   if (!res.ok) {
     // The server explains refusals (e.g. "cannot move from LOBBY to
@@ -133,6 +151,24 @@ export const updateTopic = (id, changes) =>
 export const exportTopics = () => request('/topics/export');
 export const importTopics = (topics) =>
   request('/topics/import', { method: 'POST', body: JSON.stringify({ topics }) });
+
+// ---- who is signed in ------------------------------------------------------
+
+export async function getAuth() {
+  const body = await request('/auth/me');
+  return {
+    twitchEnabled: body.twitch_enabled,
+    authenticated: body.authenticated,
+    via: body.via,
+    login: body.login,
+    displayName: body.display_name,
+  };
+}
+
+export const signOut = () => request('/auth/logout', { method: 'POST' });
+
+/** Where to send the browser to log in with Twitch; it comes back to `returnTo`. */
+export const twitchLoginUrl = (returnTo) => `${API_BASE}/auth/twitch/login?return=${encodeURIComponent(returnTo)}`;
 
 export const getPublicSession = (code) => request(`/public/sessions/${code}`);
 

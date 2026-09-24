@@ -1,8 +1,8 @@
 // Host control panel (spec 5.A), built around one idea: the round's phase
 // decides the single thing to do next. guide.js describes each step (pure,
 // tested); this file draws it and turns the primary button into the right
-// sequence of API calls. Auth is a shared admin token (api.js prompts for
-// it once) - not the real per-host login spec section 10 describes.
+// sequence of API calls. Nothing loads until auth.js has signed the host in
+// (Twitch login, or the shared admin token as a fallback).
 
 import { PHASES, state, subscribe } from './state.js';
 import * as api from './api.js';
@@ -11,6 +11,7 @@ import { withApi } from './config.js';
 import { formatClock, remainingMs } from './timer.js';
 import { DEFAULT_MINUTES, STEPS, checkPoll, complement, describe, pollSideLabels, seatName } from './guide.js';
 import { copyText, el, flash, renderStepper } from './ui.js';
+import { requireAuth } from './auth.js';
 
 const $ = (id) => document.getElementById(id);
 const SAVED_KEY = 'devils-advocate:host-session-id';
@@ -562,8 +563,9 @@ setInterval(() => {
   if (host) renderTimer(describe(host, ui));
 }, 250);
 
-// Pick the previous session back up after a refresh.
-if (sessionId) {
+// Sign in first, then pick the previous session back up after a refresh.
+requireAuth().then(() => {
+  if (!sessionId) return;
   refresh()
     .then(() => {
       if (host) {
@@ -572,4 +574,4 @@ if (sessionId) {
       }
     })
     .catch((err) => showError(err.message));
-}
+});
