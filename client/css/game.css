@@ -361,3 +361,34 @@ body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
 .weight-row { display: flex; align-items: center; gap: 0.6rem; }
 .weight-select { width: 5rem; }
 .topics-empty { text-align: center; color: #b3a6b3; padding: 2rem 0; font-size: 1.15rem; }
+
+/* ── ABOUT / CONNECT (landing) ── */
+.about-section { margin: 2.5rem 0; }
+.about-section h2 { margin-bottom: 0.75rem; }
+.about-lead { font-size: 1.3rem; line-height: 1.6; color: var(--text); max-width: 42rem; }
+.about-note { margin-top: 1.25rem; color: #c3b6c3; font-size: 1.1rem; }
+.about-note a { color: var(--gold); }
+.about-steps { list-style: none; padding: 0; display: grid; gap: 1rem; margin-top: 1rem; }
+.about-steps li { display: flex; gap: 1rem; align-items: flex-start; }
+.about-steps h3 { font-size: 1.1rem; color: var(--gold); text-transform: none; letter-spacing: 0.03em; margin-bottom: 0.2rem; }
+.about-steps p { font-size: 1.15rem; line-height: 1.5; }
+.step-num {
+  flex: 0 0 2.25rem; height: 2.25rem; display: grid; place-items: center;
+  border: 1px solid var(--gold-dim); color: var(--gold); font-family: 'Cinzel', serif;
+}
+.about-recruit { margin: 2.5rem 0; border-color: var(--gold-dim); }
+.about-recruit h2 { margin: 0.6rem 0; }
+.about-recruit p { font-size: 1.2rem; line-height: 1.6; max-width: 42rem; }
+.connect-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem; }
+@media (max-width: 680px) { .connect-grid { grid-template-columns: 1fr; } }
+.connect-card {
+  display: flex; flex-direction: column; gap: 0.4rem; padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border2); background: var(--surface); color: var(--text);
+  text-decoration: none; transition: border-color 0.2s, transform 0.2s;
+}
+.connect-card:hover, .connect-card:focus-visible { border-color: var(--gold); transform: translateY(-2px); }
+.connect-kicker { font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; color: #b3a6b3; }
+.connect-name { font-family: 'Cinzel', serif; font-size: 1.25rem; color: var(--gold); }
+.connect-desc { font-size: 1.15rem; line-height: 1.45; }
+.connect-cta { margin-top: 0.5rem; color: var(--gold-pale); font-size: 1.1rem; }
+@media (prefers-reduced-motion: reduce) { .connect-card { transition: none; } .connect-card:hover { transform: none; } }
