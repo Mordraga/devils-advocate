@@ -221,17 +221,38 @@ const actions = {
     logEvent(`Closing vote recorded (${summary}); winner announced`);
   },
 
+  // A session with no round yet.
   async nextRound() {
-    const h = await current();
-    if (h.round?.phase === 'RESULTS') await api.transitionPhase(h.round.id, 'ARCHIVED');
     await api.createRound(sessionId);
     structureKey = '';
     logEvent('New round started');
   },
+
+  // The end of a round. The same invite links keep working, so they are kept.
+  async newRound() {
+    await api.startNextRound(sessionId, false);
+    structureKey = '';
+    logEvent('New round started - contestants pick their names again');
+  },
+
+  async sameContestants() {
+    await api.startNextRound(sessionId, true);
+    structureKey = '';
+    logEvent('New round started with the same contestants');
+  },
+
+  async archive() {
+    const h = await current();
+    await api.archiveRound(h.round.id);
+    logEvent('Round archived');
+  },
 };
 
 async function runPrimary() {
-  const action = $('btn-primary').dataset.action;
+  return runAction($('btn-primary').dataset.action);
+}
+
+async function runAction(action) {
   if (busy || !actions[action]) return;
   busy = true;
   hideError();
@@ -421,6 +442,34 @@ function renderTimer(d) {
     timer.startedAt == null ? 'Start timer' : timer.pausedAt != null ? 'Resume timer' : 'Pause timer';
 }
 
+// The "or..." choices under the main button (end of a round). Rebuilt only
+// when the choices or the busy state change, so a click is never lost to a redraw.
+let alternativesKey = '';
+function renderAlternatives(d) {
+  const box = $('now-alternatives');
+  const list = d.alternatives ?? [];
+  const key = `${list.map((a) => a.id).join(',')}|${busy}`;
+  box.hidden = list.length === 0;
+  $('now-archive-link').hidden = !d.archived;
+  if (key === alternativesKey) return;
+  alternativesKey = key;
+  box.replaceChildren(
+    ...list.map((choice) =>
+      el(
+        'div',
+        { class: 'now-alternative' },
+        el('button', {
+          class: 'btn btn-ghost',
+          text: choice.label,
+          attrs: { type: 'button', 'data-action': choice.id, ...(busy ? { disabled: '' } : {}) },
+          on: { click: () => runAction(choice.id) },
+        }),
+        el('span', { class: 'now-hint', text: choice.hint ?? '' }),
+      ),
+    ),
+  );
+}
+
 function render() {
   renderConnection();
   const d = describe(host, ui);
@@ -464,6 +513,7 @@ function render() {
   primary.dataset.action = d.primary.id;
   $('now-hint').textContent = busy ? '' : (d.primary.hint ?? '');
   $('btn-skip-wait').hidden = !d.canSkipWait || ui.skipWait;
+  renderAlternatives(d);
 
   // Secondary controls only make sense with a session running.
   for (const id of ['btn-copy-overlay', 'btn-copy-watch', 'btn-back', 'btn-hide', 'btn-void', 'btn-reroll', 'btn-forget']) {

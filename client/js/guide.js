@@ -97,6 +97,8 @@ export function describe(host, ui = {}) {
   const index = PHASE_STEP[phase] ?? 0;
   const base = { index, phase, minutes: null, poll: null, timer: false };
 
+  if (host.round.status === 'void' && phase !== 'ARCHIVED') return endOfRound(host, base);
+
   switch (phase) {
     case 'LOBBY': {
       const waiting = host.contestants.filter((c) => !c.joined).map(seatName);
@@ -188,14 +190,58 @@ export function describe(host, ui = {}) {
     case 'RESULTS':
     case 'ARCHIVED':
     default:
-      return {
-        ...base,
-        title: winnerText(host) ?? 'Results',
-        blurb: 'The winner has been announced. Start another round with the same two contestants when you are ready.',
-        audience: 'The winner and the audience swing.',
-        primary: { id: 'nextRound', label: 'Start next round', disabled: false },
-      };
+      return endOfRound(host, base);
   }
+}
+
+/**
+ * A finished round (results announced, archived, or voided) has three ways on:
+ * a new round with fresh contestants (the default - the seats are cleared and
+ * everyone picks a name again), the same contestants with a new topic, or
+ * archiving the round and stopping there.
+ */
+function endOfRound(host, base) {
+  const voided = host.round.status === 'void';
+  const archived = host.round.phase === 'ARCHIVED';
+
+  const alternatives = [
+    {
+      id: 'sameContestants',
+      label: 'Same contestants, new topic',
+      hint: 'Keeps both names. You draw a fresh topic.',
+    },
+  ];
+  if (!archived) {
+    alternatives.push({
+      id: 'archive',
+      label: 'Archive this round',
+      hint: 'Saves it to the archive and stops here.',
+    });
+  }
+
+  let title = winnerText(host) ?? 'Results';
+  let blurb = 'The winner has been announced. Choose what happens next.';
+  if (voided) {
+    title = 'This round was voided';
+    blurb = 'It stays in the log but does not count. Choose what happens next.';
+  } else if (archived) {
+    blurb = 'Saved to the archive. Ready for the next round when you are.';
+  }
+
+  return {
+    ...base,
+    title: archived && !voided ? 'Round archived' : title,
+    blurb,
+    audience: 'The winner and the audience swing.',
+    archived,
+    primary: {
+      id: 'newRound',
+      label: 'New round, new contestants',
+      disabled: false,
+      hint: 'Clears both names. Contestants pick a name again with the same links.',
+    },
+    alternatives,
+  };
 }
 
 // ---- poll entry --------------------------------------------------------

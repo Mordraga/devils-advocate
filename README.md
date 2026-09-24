@@ -24,6 +24,7 @@ phase, or winner; it only renders state the server issues.
 | `client/play.html` | Contestant room (invite-only) |
 | `client/watch.html` | Optional public watch view |
 | `client/topics.html` | Topic admin: add, edit, switch on/off, weight, import/export |
+| `client/archive.html` | Archived rounds, with copy-as-post text (host only) |
 
 ## Running it locally
 
@@ -60,7 +61,10 @@ The full loop works end to end in a real browser (see Tests below).
   100), debate, closing poll, announce the winner, next round. The host can see
   the topic and sides before the audience does. Rarely-needed controls (back a
   phase, void, clear polls, emergency hide) sit under "More controls". A
-  refresh resumes the session.
+  refresh resumes the session. When a round ends the host chooses: **New round,
+  new contestants** (both names are cleared and each contestant is asked for a
+  name again, on the same links), **Same contestants, new topic**, or **Archive
+  this round** (saved to `archive.html` as it happened, for future posts).
 - **Contestants** (`play.html`) see a plain-language banner for every phase
   (what is happening, what to do), a step indicator, the question with its
   explainer line, their own stance and their opponent's, a live countdown,
@@ -108,7 +112,7 @@ audio files. Every effect is a small recipe of oscillators and filtered noise.
   reload the next tap anywhere wakes it up. These pages honour
   `prefers-reduced-motion` (finished frames, no movement).
 
-Not yet built: archive-session UI and Twitch EventSub automation (channel-point / poll triggers).
+Not yet built: Twitch EventSub automation (channel-point / poll triggers).
 
 ## Tests
 

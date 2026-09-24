@@ -126,6 +126,35 @@ export const finalizeRound = (roundId) => request(`/rounds/${roundId}/finalize`,
 
 export const voidRound = (roundId) => request(`/rounds/${roundId}/void`, { method: 'POST' });
 
+// End of a round: save it to the archive, or move on (fresh contestants, or the same ones).
+export const archiveRound = (roundId) => request(`/rounds/${roundId}/archive`, { method: 'POST' });
+export const startNextRound = (sessionId, keepContestants) =>
+  request(`/sessions/${sessionId}/next-round`, { method: 'POST', body: JSON.stringify({ keep_contestants: keepContestants }) });
+
+export async function listArchive(limit = 100) {
+  const rows = await request(`/rounds/archive?limit=${limit}`);
+  return rows.map((row) => ({
+    id: row.id,
+    sessionTitle: row.session_title,
+    archivedAt: row.archived_at,
+    completedAt: row.completed_at,
+    status: row.summary.status ?? 'complete',
+    topic: row.summary.topic && {
+      prompt: row.summary.topic.prompt,
+      explainer: row.summary.topic.explainer,
+      sideA: row.summary.topic.side_a,
+      sideB: row.summary.topic.side_b,
+      category: row.summary.topic.category,
+    },
+    names: row.summary.contestants ?? { A: null, B: null },
+    winner: row.summary.winner ?? null,
+    winnerName: row.summary.winner_name ?? null,
+    opening: row.summary.opening ?? null,
+    closing: row.summary.closing ?? null,
+    sway: row.summary.sway ?? null,
+  }));
+}
+
 export const rerollRound = (roundId) => request(`/rounds/${roundId}/reroll`, { method: 'POST' });
 
 export const createInvite = (sessionId, contestantId) =>

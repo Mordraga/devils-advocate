@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archive — Devil's Advocate</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./css/crypt.css">
+  <link rel="stylesheet" href="./css/game.css">
+</head>
+<body>
+
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="./index.html" class="nav-brand">Devil's Advocate</a>
+      <ul class="nav-links">
+        <li><a href="./host.html">Host</a></li>
+        <li><a href="./topics.html">Topics</a></li>
+        <li><a href="./archive.html" class="active">Archive</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="game-main archive-main">
+    <header class="host-head">
+      <div>
+        <h1>Archive</h1>
+        <p class="session-line" id="archive-summary">Loading…</p>
+      </div>
+    </header>
+
+    <p class="now-error" id="archive-error" role="alert" hidden></p>
+    <ul class="archive-list" id="archive-list"></ul>
+    <p class="topics-empty" id="archive-empty" hidden>
+      Nothing archived yet. When a round ends, choose “Archive this round” on the host page and it lands here.
+    </p>
+  </main>
+
+  <script type="module" src="./js/archive.js"></script>
+
+</body>
+</html>

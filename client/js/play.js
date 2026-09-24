@@ -18,6 +18,7 @@ let token = null;
 let me = null; // { contestantId, seat, name, joined } once the invite is redeemed
 let editingName = false;
 let notesRound = null;
+let wasJoined = null; // whether the server had this seat's name last time we looked
 
 function mySide() {
   if (!me) return null;
@@ -83,6 +84,20 @@ function render() {
     state.connectionStatus;
 
   if (!me) return;
+
+  // The host started a new round with fresh contestants: this seat's name was
+  // cleared on the server, so ask for a name again. (Only a true -> false change
+  // counts, so the moment right after submitting a name can't trip it.)
+  const seat = state.roster[me.seat];
+  if (seat && wasJoined === true && seat.joined === false && me.joined) {
+    me.joined = false;
+    editingName = false;
+    $('join-title').textContent = 'New round - pick your name';
+    $('join-blurb').textContent = 'The host started a new round. Pick the name the host, chat and your opponent will see.';
+    $('join-name').value = '';
+    $('join-name').focus();
+  }
+  if (seat) wasJoined = seat.joined;
 
   const needsName = !me.joined || editingName;
   show('join-card', needsName);

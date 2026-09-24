@@ -34,6 +34,7 @@ function mountAccountBar(me) {
       },
     },
   });
+  nav.classList.add('has-account');
   nav.append(el('div', { class: 'account-bar' }, label, out));
 }
 

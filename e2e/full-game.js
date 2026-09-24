@@ -311,8 +311,11 @@ async function newPage(browser, label, viewport) {
     await shot(voters[0], 'phone-results');
 
     // ================================================================ ROUND 2
-    console.log('\nROUND 2 - HOST: next round, then the manual (Twitch) fallback');
-    await clickPrimary();
+    console.log('\nROUND 2 - HOST: end-of-round choices, then the manual (Twitch) fallback');
+    check((await text(host, '#btn-primary')) === 'New round, new contestants', 'a finished round offers "New round, new contestants" as the main choice');
+    const choices = await host.$$eval('#now-alternatives button', (b) => b.map((x) => x.dataset.action).join(','));
+    check(choices === 'sameContestants,archive', `and, alongside it, same contestants / archive (${choices})`);
+    await host.click('#now-alternatives [data-action="sameContestants"]');
     await title('Invite your contestants');
     check(!(await host.$eval('#btn-primary', (b) => b.disabled)), 'contestants are still joined, so dealing is immediately available');
     await waitFor(alice, () => document.querySelector('#banner-headline').textContent.includes('lobby'));
@@ -361,6 +364,44 @@ async function newPage(browser, label, viewport) {
     await waitFor(host, (c) => document.querySelector('#session-line').textContent.includes(c), code);
     check(true, 'a page refresh picks the same session back up');
     check(/won|draw/.test(await text(host, '#now-title')), 'and lands on the right step');
+
+    // ================================================ end of round 2
+    console.log('\nEND OF ROUND: archive it, then a new round with new contestants');
+    await host.click('#now-alternatives [data-action="archive"]');
+    await title('Round archived');
+    const left = await host.$$eval('#now-alternatives button', (b) => b.map((x) => x.dataset.action).join(','));
+    check(left === 'sameContestants', 'once archived only "same contestants" remains beside the main button');
+    check(await visible(host, '#now-archive-link'), 'the host is pointed at the archive');
+
+    await host.goto(`${CLIENT}/archive.html`);
+    await waitFor(host, () => document.querySelectorAll('.archive-item').length >= 2);
+    const items = await host.$$eval('.archive-item', (e) => e.map((x) => x.textContent));
+    check(items.length >= 2, 'the archive holds both rounds (round 1 was archived when the host moved on)');
+    check(items[0].includes('Alice') && items[0].includes('Bob') && /won|draw/.test(items[0]), `the newest entry reads as it happened (${items[0].slice(0, 90)}...)`);
+    check(await host.$eval('.archive-item button', (b) => /Copy for a post/.test(b.textContent)), 'each entry can be copied as post text');
+    await shot(host, 'archive');
+
+    await host.goto(`${CLIENT}/host.html`);
+    await waitFor(host, () => /archived/.test(document.querySelector('#now-title').textContent));
+    await clickPrimary(); // New round, new contestants
+    await title('Invite your contestants');
+    check(await host.$eval('#btn-primary', (b) => b.disabled), 'with the seats cleared, dealing is locked until both join again');
+    check((await text(host, '#now-hint')).includes('Waiting for'), 'and the hint says who the host is waiting for');
+
+    for (const [page, name] of [[alice, 'Carol'], [bob, 'Dave']]) {
+      await waitFor(page, () => !document.querySelector('#join-card').hidden);
+      check((await text(page, '#join-title')) === 'New round - pick your name', `${name}'s page asks for a name again`);
+      check((await page.$eval('#join-name', (i) => i.value)) === '', `${name}'s name box starts empty`);
+    }
+    await shot(alice, 'alice-new-round');
+    for (const [page, name] of [[alice, 'Carol'], [bob, 'Dave']]) {
+      await page.type('#join-name', name);
+      await page.click('#join-submit');
+      await waitFor(page, (n) => document.querySelector('#who-line').textContent.includes(n), name);
+    }
+    check(true, 'both contestants picked new names');
+    await waitFor(host, () => !document.querySelector('#btn-primary').disabled);
+    check(true, 'and the host can deal again');
 
     console.log('\nBROWSER ERRORS:', errors.length ? '' : 'none');
     for (const e of errors) console.log('  ', e);

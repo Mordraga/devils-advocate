@@ -549,3 +549,14 @@ main.auth-locked > *:not(.auth-gate) { display: none !important; }
 .gate-token summary { cursor: pointer; font-size: 1.05rem; }
 .gate-token-form { margin-top: 0.75rem; }
 .account-bar { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; font-size: 0.95rem; color: var(--gold-pale); }
+
+/* ── END OF ROUND + ARCHIVE ── */
+.now-alternatives { display: grid; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border2); }
+.now-alternative { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.now-archive-link { display: inline-block; margin-top: 0.75rem; }
+.archive-list { list-style: none; display: grid; gap: 1rem; padding: 0; }
+.archive-item { margin-bottom: 0 !important; }
+.archive-when { color: #b3a6b3; font-size: 0.95rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem; }
+.archive-result { color: var(--gold-pale); font-size: 1.15rem; margin: 0.5rem 0 0.75rem; }
+.archive-post { white-space: pre-wrap; margin-top: 0.75rem; padding: 0.75rem 1rem; border: 1px dashed var(--border2); color: var(--text); font: inherit; }
+.nav-inner.has-account .nav-links { margin-left: 2rem; margin-right: auto; }

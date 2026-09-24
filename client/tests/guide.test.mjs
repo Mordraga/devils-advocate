@@ -41,7 +41,7 @@ test('lobby: enabled once everyone is in', () => {
 test('each phase has exactly one primary action, in order', () => {
   const phases = ['LOBBY', 'TOPIC_LOCKED', 'REVEAL', 'PREPARATION', 'OPENING_POLL', 'DEBATE', 'CLOSING_POLL', 'RESULTS'];
   const ids = phases.map((p) => describe(host(p)).primary.id);
-  assert.deepEqual(ids, ['deal', 'reveal', 'startPrep', 'openPoll', 'startDebate', 'closePoll', 'finish', 'nextRound']);
+  assert.deepEqual(ids, ['deal', 'reveal', 'startPrep', 'openPoll', 'startDebate', 'closePoll', 'finish', 'newRound']);
 });
 
 test('step index follows the phase; ARCHIVED shares the results step', () => {
@@ -97,4 +97,32 @@ test('typing one percentage fills in the other', () => {
   assert.equal(complement('33.3'), '66.7');
   assert.equal(complement(''), '');
   assert.equal(complement('abc'), '');
+});
+
+test('a finished round offers three ways on: new contestants, same contestants, archive', () => {
+  const d = describe(host('RESULTS', { winner: 'B', contestants: [{ seat: 'one', name: 'Alice', joined: true, side: 'A' }, { seat: 'two', name: 'Bob', joined: true, side: 'B' }] }));
+  assert.equal(d.title, 'Bob won');
+  assert.equal(d.primary.id, 'newRound');
+  assert.match(d.primary.hint, /Clears both names/);
+  assert.deepEqual(d.alternatives.map((a) => a.id), ['sameContestants', 'archive']);
+  assert.equal(d.archived, false);
+});
+
+test('once archived, archiving is no longer offered', () => {
+  const d = describe(host('ARCHIVED'));
+  assert.equal(d.title, 'Round archived');
+  assert.equal(d.archived, true);
+  assert.equal(d.primary.id, 'newRound');
+  assert.deepEqual(d.alternatives.map((a) => a.id), ['sameContestants']);
+});
+
+test('a voided round mid-debate gets the same choices instead of a dead end', () => {
+  const d = describe(host('DEBATE', { round: { id: 'r', phase: 'DEBATE', status: 'void' } }));
+  assert.equal(d.title, 'This round was voided');
+  assert.equal(d.primary.id, 'newRound');
+  assert.deepEqual(d.alternatives.map((a) => a.id), ['sameContestants', 'archive']);
+});
+
+test('earlier phases have no alternatives', () => {
+  assert.equal(describe(host('DEBATE')).alternatives, undefined);
 });
