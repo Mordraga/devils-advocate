@@ -126,6 +126,10 @@ export const finalizeRound = (roundId) => request(`/rounds/${roundId}/finalize`,
 
 export const voidRound = (roundId) => request(`/rounds/${roundId}/void`, { method: 'POST' });
 
+// Remove whoever holds a seat; returns a fresh invite for the seat.
+export const kickContestant = (sessionId, contestantId) =>
+  request(`/sessions/${sessionId}/contestants/${contestantId}/kick`, { method: 'POST' });
+
 // End of a round: save it to the archive, or move on (fresh contestants, or the same ones).
 export const archiveRound = (roundId) => request(`/rounds/${roundId}/archive`, { method: 'POST' });
 export const startNextRound = (sessionId, keepContestants) =>

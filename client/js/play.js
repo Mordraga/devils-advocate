@@ -187,8 +187,10 @@ $('join-form').addEventListener('submit', async (event) => {
     applyIdentity(await setContestantName(token, name));
     editingName = false;
     render();
-  } catch {
-    error.textContent = "Couldn't save your name - check your connection and try again.";
+  } catch (err) {
+    error.textContent = /failed: 410/.test(err.message)
+      ? 'The host removed this link. Ask them for a new one.'
+      : "Couldn't save your name - check your connection and try again.";
     error.hidden = false;
   } finally {
     button.disabled = false;

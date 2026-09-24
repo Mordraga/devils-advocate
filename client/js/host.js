@@ -319,6 +319,19 @@ async function copyInvite(contestant, button) {
   }
 }
 
+async function removeContestant(contestant) {
+  const name = seatName(contestant);
+  if (!window.confirm(`Remove ${name}? Their invite link stops working and their seat is emptied. You get a fresh link for the seat.`)) return;
+  hideError();
+  try {
+    inviteCache[contestant.seat] = await api.kickContestant(sessionId, contestant.id);
+    logEvent(`Removed ${name}; the seat has a fresh link`);
+    await refresh();
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
 // Rebuilt only when who-has-joined changes, so a "Copied ✓" flash isn't
 // wiped by every live update.
 function renderInvites(container, visible) {
@@ -345,6 +358,14 @@ function renderInvites(container, visible) {
           text: contestant.joined ? '✓ Joined' : 'Waiting to join',
         }),
         button,
+        contestant.joined
+          ? el('button', {
+              class: 'link-btn',
+              text: 'Remove',
+              attrs: { type: 'button', 'aria-label': `Remove ${seatName(contestant)}` },
+              on: { click: () => removeContestant(contestant) },
+            })
+          : null,
       );
     }),
   );

@@ -24,6 +24,7 @@ const errors = [];
 const debugPages = {};
 let allow409 = 0; // a deliberate refusal (e.g. "no votes yet") logs a 409 in the console
 let allow404 = 0; // ...and a deliberately wrong room code logs a 404
+let allow410 = 0; // ...and a removed contestant's dead link logs a 410
 let step = 0;
 const log = (msg) => console.log(`  ${msg}`);
 const check = (cond, msg) => {
@@ -47,6 +48,10 @@ function watchErrors(page, label) {
     if (m.type() !== 'error') return;
     if (allow409 > 0 && /status of 409/.test(m.text())) {
       allow409 -= 1;
+      return;
+    }
+    if (allow410 > 0 && /status of 410/.test(m.text())) {
+      allow410 -= 1;
       return;
     }
     if (allow404 > 0 && /status of 404/.test(m.text())) {
@@ -402,6 +407,20 @@ async function newPage(browser, label, viewport) {
     check(true, 'both contestants picked new names');
     await waitFor(host, () => !document.querySelector('#btn-primary').disabled);
     check(true, 'and the host can deal again');
+
+    console.log('');
+    console.log('HOST: remove a contestant');
+    await host.click('#now-invites .invite-row:nth-child(2) .link-btn'); // Dave (the dialog is auto-accepted)
+    await waitFor(host, () => document.querySelectorAll('#now-invites .badge-gold').length === 1);
+    check(true, 'removing Dave empties his seat on the host roster');
+    await waitFor(bob, () => !document.querySelector('#join-card').hidden);
+    check(true, "Dave's page asks for a name again");
+    allow410 += 1;
+    await bob.type('#join-name', 'Sneaky');
+    await bob.click('#join-submit');
+    await waitFor(bob, () => document.querySelector('#join-error').textContent.includes('removed this link'));
+    check(true, 'his old link no longer lets him back in, and says why');
+    check(!(await host.$eval('#btn-primary', (b) => !b.disabled)), 'and the host cannot deal until the seat is filled');
 
     console.log('\nBROWSER ERRORS:', errors.length ? '' : 'none');
     for (const e of errors) console.log('  ', e);
