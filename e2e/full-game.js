@@ -436,6 +436,19 @@ async function newPage(browser, label, viewport) {
     check((await text(bob, '#invite-error-text')).includes('The host has removed you from your seat.'), 'opening his old link later says the same');
     check(!(await host.$eval('#btn-primary', (b) => !b.disabled)), 'and the host cannot deal until the seat is filled');
 
+    console.log('');
+    console.log('HOST: void a round - everyone is told');
+    await host.click('details.more summary');
+    await host.click('#btn-void'); // the confirm dialog is auto-accepted
+    await waitFor(voters[0], () => !document.querySelector('#overlay-voided').hidden);
+    check((await text(voters[0], '#overlay-voided h2')) === 'Round Voided', 'the watch page tells viewers the round was voided');
+    await waitFor(overlay, () => !document.querySelector('#overlay-voided').hidden);
+    check(true, 'and so does the stream overlay');
+    await waitFor(alice, () => document.querySelector('#banner-headline').textContent === 'Round voided');
+    check((await text(alice, '#banner-body')).includes("doesn't count"), 'contestants are told it does not count');
+    await waitFor(host, () => /voided/.test(document.querySelector('#now-title').textContent));
+    check(true, 'and the host is offered the ways on');
+
     console.log('\nBROWSER ERRORS:', errors.length ? '' : 'none');
     for (const e of errors) console.log('  ', e);
     if (errors.length) process.exitCode = 1;

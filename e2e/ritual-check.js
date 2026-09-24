@@ -190,6 +190,21 @@ async function part2(browser) {
   check((await page.$$('.sparkles')).length === 0, 'the sparks clear away');
   check((await style('#overlay-winner', 'opacity')) === '1', 'the winner name is fully visible');
 
+  // The host voids the round: the audience is told, and the cauldron fizzles.
+  before = await oscillators();
+  await patch({ voided: true });
+  await sleep(300);
+  check(/ritual-void/.test(await bodyClass()), 'voiding starts the fizzle ritual');
+  check((await oscillators()) - before >= 5, 'the cauldron fizzles out');
+  check(await page.$eval('#overlay-voided', (e) => !e.hidden), 'the overlay says the round was voided');
+  check((await page.$eval('#overlay-voided h2', (e) => e.textContent)).includes('Round Voided'), 'in plain words');
+  check(await page.$eval('#overlay-results', (e) => e.hidden), 'and the results are gone');
+  before = await oscillators();
+  await patch({ poll: { kind: null, open: false, total: 9 } });
+  await sleep(200);
+  check((await oscillators()) === before, 'and it does not fizzle again');
+  await patch({ voided: false });
+
   // Emergency hide is silent.
   before = await oscillators();
   await patch({ hidden: true, phase: 'ARCHIVED' });

@@ -14,6 +14,7 @@ export function snapshot(state) {
   return {
     phase: state.phase,
     hidden: Boolean(state.hidden),
+    voided: Boolean(state.voided),
     pollOpen: Boolean(state.poll?.open),
     pollKind: state.poll?.kind ?? null,
     pollTotal: state.poll?.total ?? 0,
@@ -44,6 +45,11 @@ export function cuesForChange(prev, next, { turnoutPops = false } = {}) {
 
   // The host's emergency hide is a quiet cut, not a show moment.
   if (next.hidden || prev.hidden) return none;
+
+  // The host voided the round: the cauldron fizzles out. (A voided round makes
+  // no further show sounds - the countdown stops ticking too, see ritual.js.)
+  if (next.voided && !prev.voided) return { ritual: 'void', sounds: [{ name: 'fizzle', delay: 0 }] };
+  if (next.voided) return none;
 
   if (next.phase !== prev.phase) {
     // Stepping backwards (a correction) or into the archive stays silent.

@@ -20,6 +20,15 @@ test('timers are labelled only for the phases that have one', () => {
   assert.equal(label('CLOSING_POLL'), null);
 });
 
+test('a voided round tells contestants plainly, in any phase', () => {
+  for (const phase of ['PREPARATION', 'DEBATE', 'CLOSING_POLL']) {
+    const d = describePhase({ phase, voided: true, mySide: 'A' });
+    assert.equal(d.headline, 'Round voided');
+    assert.match(d.body, /doesn't count/);
+    assert.equal(d.timerLabel, null); // no clock for a round that isn't going ahead
+  }
+});
+
 test('lobby tells you whether your opponent is here', () => {
   assert.match(describePhase({ phase: 'LOBBY', opponentName: 'Bob', opponentJoined: true }).body, /Bob is here/);
   assert.match(describePhase({ phase: 'LOBBY', opponentJoined: false }).body, /Waiting for your opponent/);

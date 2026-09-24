@@ -276,6 +276,7 @@ export function normalizePublicState(raw) {
     poll: { kind: raw.poll.kind, open: raw.poll.open, total: raw.poll.total },
     openingSplit: raw.opening_split && { a: raw.opening_split.a, b: raw.opening_split.b },
     winner: raw.winner,
+    voided: Boolean(raw.voided),
     results: raw.results && {
       openingA: raw.results.opening_a,
       openingB: raw.results.opening_b,

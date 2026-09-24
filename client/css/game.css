@@ -584,3 +584,18 @@ body.overlay-page .time-pop { font-size: 3.2rem; }
 @media (prefers-reduced-motion: reduce) {
   body:not(.overlay-page) .time-pop { animation: time-pop-fade 1.9s linear forwards; transform: translate(-50%, -12px); }
 }
+
+/* a voided round: the cauldron fizzles out */
+#overlay-voided h2 { color: var(--no-text); }
+.voided-next { color: #b3a6b3; font-style: italic; }
+@keyframes fizzle {
+  0% { opacity: 0; filter: blur(8px); transform: scale(1.06); }
+  18% { opacity: 1; filter: blur(0); }
+  28% { opacity: 0.5; }
+  38% { opacity: 1; }
+  52% { opacity: 0.65; }
+  66% { opacity: 1; }
+  100% { opacity: 1; filter: none; transform: none; }
+}
+body.ritual-void #overlay-voided,
+body.ritual-void #banner { animation: fizzle 1.7s ease-out both; }

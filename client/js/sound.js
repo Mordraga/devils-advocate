@@ -164,6 +164,18 @@ export const RECIPES = {
     return RECIPES.gong(ctx, out, t, rand);
   },
 
+  // The host voided the round: a cauldron losing heat. A hiss that falls away,
+  // a sagging low tone, and bubbles popping further apart and lower each time.
+  fizzle(ctx, out, t, rand) {
+    noise(ctx, out, { t, dur: 1.7, gain: 0.22, attack: 0.02, filter: 'bandpass', freq: 5200, freqEnd: 600, q: 0.9 });
+    noise(ctx, out, { t, dur: 1.0, gain: 0.1, attack: 0.01, filter: 'highpass', freq: 6500, freqEnd: 2500, q: 0.7 });
+    tone(ctx, out, { type: 'sawtooth', freq: 180, freqEnd: 38, t, dur: 1.5, gain: 0.12, attack: 0.01 });
+    for (let i = 0; i < 7; i++) {
+      bubble(ctx, out, { t: t + 0.1 + i * 0.16 + i * i * 0.03 + rand() * 0.05, freq: 240 - i * 22, gain: 0.11 * (1 - i / 9) });
+    }
+    return 1.8;
+  },
+
   // A vote landing.
   pop(ctx, out, t) {
     tone(ctx, out, { freq: 520, freqEnd: 980, t, dur: 0.07, gain: 0.2, attack: 0.003 });

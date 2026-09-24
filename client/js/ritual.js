@@ -77,7 +77,8 @@ function onState(turnoutPops) {
 }
 
 function onClock() {
-  const running = state.timer.startedAt != null && state.timer.pausedAt == null && ['PREPARATION', 'DEBATE'].includes(state.phase);
+  const running =
+    !state.voided && state.timer.startedAt != null && state.timer.pausedAt == null && ['PREPARATION', 'DEBATE'].includes(state.phase);
   const second = secondsLeft(remainingMs(state.timer, state.serverOffsetMs), running);
   document.body.classList.toggle('timer-low', isLowTime(second));
 

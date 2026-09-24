@@ -19,13 +19,17 @@ const SECTIONS = [
   'overlay-poll-indicator',
   'overlay-split',
   'overlay-results',
+  'overlay-voided',
   'overlay-technical-pause',
 ];
 
-function sectionsForPhase(phase, hidden) {
+function sectionsForPhase(phase, hidden, voided) {
   // Emergency hide (spec 5.A "switch to standby card") overrides
   // whatever the phase would normally show.
   if (hidden) return ['overlay-technical-pause'];
+
+  // A voided round says so, whatever phase it was in.
+  if (voided) return ['overlay-voided'];
 
   switch (phase) {
     case 'TOPIC_LOCKED':
@@ -100,7 +104,7 @@ function renderTimer() {
 }
 
 function render() {
-  const visible = new Set(sectionsForPhase(state.phase, state.hidden));
+  const visible = new Set(sectionsForPhase(state.phase, state.hidden, state.voided));
   SECTIONS.forEach((id) => {
     const el = $(id);
     if (el) el.hidden = !visible.has(id);

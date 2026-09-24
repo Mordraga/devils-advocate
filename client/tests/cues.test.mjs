@@ -68,6 +68,18 @@ test('new votes pop only where asked, and only while the poll is open', () => {
   assert.deepEqual(cuesForChange(a, { ...b, pollKind: 'closing' }, { turnoutPops: true }).sounds, []);
 });
 
+test('voiding a round fizzles once, then stays quiet', () => {
+  const live = snap({ phase: 'PREPARATION' });
+  const voided = snap({ phase: 'PREPARATION', voided: true });
+  const cue = cuesForChange(live, voided);
+  assert.equal(cue.ritual, 'void');
+  assert.deepEqual(names(cue), ['fizzle']);
+  assert.deepEqual(cuesForChange(voided, { ...voided }).sounds, []); // no repeat
+  assert.deepEqual(cuesForChange(voided, { ...voided, pollTotal: 5 }).sounds, []);
+  // ...and a hidden overlay stays silent about it too
+  assert.deepEqual(cuesForChange(live, { ...voided, hidden: true }).sounds, []);
+});
+
 test('nothing changed, nothing plays', () => {
   const a = snap({ phase: 'DEBATE' });
   assert.deepEqual(cuesForChange(a, { ...a }), { sounds: [], ritual: null });
@@ -103,5 +115,5 @@ test('seconds left counts up to the next whole second and needs a running clock'
 
 test('snapshot keeps only what cues need', () => {
   const s = snapshot({ phase: 'DEBATE', hidden: 0, poll: { open: true, kind: 'closing', total: 3 }, winner: undefined, topic: {} });
-  assert.deepEqual(s, { phase: 'DEBATE', hidden: false, pollOpen: true, pollKind: 'closing', pollTotal: 3, winner: null });
+  assert.deepEqual(s, { phase: 'DEBATE', hidden: false, voided: false, pollOpen: true, pollKind: 'closing', pollTotal: 3, winner: null });
 });

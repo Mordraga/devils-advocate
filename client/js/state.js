@@ -43,6 +43,7 @@ export const state = {
   openingSplit: null, // { a, b } - the audience's starting point, shown once the opening poll has closed
   winner: null, // 'A' | 'B' | 'draw' | null - only set from RESULTS onward
   results: null, // { openingA, openingB, closingA, closingB, swayA, swayB } - same
+  voided: false, // the host voided this round: it doesn't count (screens say so; voting is closed)
   hidden: false, // host's emergency-hide toggle (overlay.visibility_changed)
 };
 

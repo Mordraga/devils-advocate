@@ -83,9 +83,20 @@ export function describeResults({ mySide, winner, results }) {
  * @returns { step, headline, body, tone, timerLabel }
  */
 export function describePhase(ctx) {
-  const { phase, opponentName, opponentJoined, pollTotal } = ctx;
+  const { phase, opponentName, opponentJoined, pollTotal, voided } = ctx;
   const votes = pollTotal > 0 ? ` ${pollTotal} vote${pollTotal === 1 ? '' : 's'} in so far.` : '';
   const step = stepIndex(phase);
+
+  // The host voided this round, whatever phase it was in.
+  if (voided) {
+    return {
+      step,
+      tone: 'wait',
+      headline: 'Round voided',
+      body: "The host voided this round, so it doesn't count. The Cauldron fizzles out. Hang tight for the next one.",
+      timerLabel: null,
+    };
+  }
 
   switch (phase) {
     case 'LOBBY':

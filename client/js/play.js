@@ -115,6 +115,7 @@ function render() {
     winner: state.winner,
     results: state.results,
     pollTotal: state.poll.total,
+    voided: state.voided,
   });
 
   renderStepper($('stepper'), STEPS, phase.step);
