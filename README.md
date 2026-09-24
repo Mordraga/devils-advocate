@@ -77,15 +77,43 @@ Modules: `state.js` (shared pub/sub), `api.js` (REST + snake_case -> camelCase),
 `voter.js` (anonymous per-browser voter id), `watch.js` / `landing.js` (voting and
 room-code entry),
 `timer.js` (countdown maths), `guide.js` (host step logic), `copy.js`
-(contestant wording) and `topics-logic.js` (topic form rules) - the last four are pure and unit-tested.
+(contestant wording), `topics-logic.js` (topic form rules) and `cues.js` (which
+moment gets which sound/motion) - the last five are pure and unit-tested.
+`ritual.js` and `sound.js` perform the cues.
 
-Not yet built: the "ritualistic" motion design (spec
-section 6) beyond basic fade-ins.
+### Motion and sound
+
+The show moves in small rituals: a cauldron simmers on standby, the topic
+condenses out of the brew and a seal stamps it shut, the two sides sweep in,
+the last ten seconds of a clock pulse red, and the winner arrives in a shower of
+sparks. Each one is a one-shot `ritual-*` class on `<body>` (`js/ritual.js`,
+styles under "RITUAL MOTION" in `game.css`) that settles into a normal, readable
+frame. `js/cues.js` (pure, tested) decides which state change earns which cue,
+and the first snapshot after a page load or reconnect never fires one.
+
+Sound is synthesized live with the Web Audio API in `js/sound.js`; there are no
+audio files. Every effect is a small recipe of oscillators and filtered noise.
+
+- **OBS overlay:** plays sound by itself. In the browser source's settings, tick
+  "Control audio via OBS" to mix it, or add `&sound=off` to the URL to silence a
+  copy, or `&volume=0.5` to turn it down. The overlay always animates, whatever
+  the PC's reduced-motion setting says.
+- **Watch and contestant pages:** an "Enable sound" button in the nav (browsers
+  need a tap before a page may make noise). The choice is remembered; after a
+  reload the next tap anywhere wakes it up. These pages honour
+  `prefers-reduced-motion` (finished frames, no movement).
+
+Not yet built: archive-session UI and host login (Twitch).
 
 ## Tests
 
 ```bash
 node --test "client/tests/*.test.mjs"     # pure logic: no browser needed
+
+# Motion + sound in real Chrome, no server needed: renders every effect offline
+# (audible, no clipping, dies away) and drives the overlay through a round.
+# Serve client/ (python -m http.server 8080) then:
+node e2e/ritual-check.js http://localhost:8080
 
 # Two full rounds in real Chrome (host, two contestants, three audience phones,
 # overlay): audience voting, then the by-hand fallback. Needs the server

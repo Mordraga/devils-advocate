@@ -393,3 +393,148 @@ body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
 .connect-cta { margin-top: 0.5rem; color: var(--gold-pale); font-size: 1.1rem; }
 @media (prefers-reduced-motion: reduce) { .connect-card { transition: none; } .connect-card:hover { transform: none; } }
 .about-recruit a { color: var(--gold); }
+
+/* ── RITUAL MOTION (spec section 6) ──
+   ritual.js adds a one-shot `ritual-*` class to <body> when the show moves on
+   and removes it ~3.6s later. Every element's resting style is its finished,
+   readable frame, so a missed or interrupted animation never leaves anything
+   half-drawn. */
+
+/* the cauldron on standby */
+.cauldron { display: block; width: clamp(120px, 22vw, 200px); margin: 0 auto 0.5rem; overflow: visible; }
+.cauldron .pot { fill: #1b1218; stroke: var(--gold-dim); stroke-width: 3; }
+.cauldron .rim { stroke: var(--gold); stroke-width: 3; }
+.cauldron .legs { stroke: var(--gold-dim); stroke-width: 5; }
+.cauldron .brew { animation: brew-glow 3.2s ease-in-out infinite; }
+.cauldron .bubbles circle {
+  fill: var(--gold-pale); opacity: 0; transform-box: fill-box; transform-origin: center;
+  animation: bubble-rise 2.6s ease-in infinite;
+}
+.cauldron .bubbles circle:nth-child(2) { animation-delay: 0.55s; }
+.cauldron .bubbles circle:nth-child(3) { animation-delay: 1.1s; }
+.cauldron .bubbles circle:nth-child(4) { animation-delay: 1.6s; }
+.cauldron .bubbles circle:nth-child(5) { animation-delay: 2.1s; }
+.cauldron .steam path { stroke: var(--gold-dim); stroke-width: 3; opacity: 0; stroke-dasharray: 60; animation: steam 4.2s ease-in-out infinite; }
+.cauldron .steam path:nth-child(2) { animation-delay: 1.4s; }
+.cauldron .steam path:nth-child(3) { animation-delay: 2.8s; }
+
+@keyframes brew-glow { 0%, 100% { filter: brightness(0.85); } 50% { filter: brightness(1.3); } }
+@keyframes bubble-rise {
+  0% { opacity: 0; transform: translateY(0) scale(0.6); }
+  20% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-36px) scale(1.15); }
+}
+@keyframes steam {
+  0% { opacity: 0; stroke-dashoffset: 60; transform: translateY(6px); }
+  30% { opacity: 0.5; }
+  100% { opacity: 0; stroke-dashoffset: 0; transform: translateY(-10px); }
+}
+
+/* the seal that closes the topic */
+.seal { position: relative; display: inline-block; font-size: 2.2rem; line-height: 1; color: var(--no-text); }
+.seal::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 1em; height: 1em; margin: -0.5em 0 0 -0.5em;
+  border: 2px solid var(--gold); border-radius: 50%; opacity: 0;
+}
+
+/* shared keyframes */
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes condense {
+  from { opacity: 0; filter: blur(14px); transform: scale(1.1) translateY(10px); }
+  to { opacity: 1; filter: blur(0); transform: none; }
+}
+@keyframes seal-stamp {
+  0% { opacity: 0; transform: scale(3.2) rotate(-24deg); }
+  60% { opacity: 1; transform: scale(0.88) rotate(3deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes seal-ring { 0% { opacity: 0.9; transform: scale(0.6); } 100% { opacity: 0; transform: scale(3.4); } }
+@keyframes enter-left {
+  from { opacity: 0; transform: translateX(-70px) rotate(-3deg); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes enter-right {
+  from { opacity: 0; transform: translateX(70px) rotate(3deg); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes flash { from { box-shadow: 0 0 34px rgba(201, 168, 76, 0.55); } to { box-shadow: 0 0 0 rgba(201, 168, 76, 0); } }
+@keyframes gong-pulse {
+  0% { transform: scale(1.22); text-shadow: 0 0 40px rgba(201, 168, 76, 0.9); }
+  100% { transform: none; text-shadow: none; }
+}
+@keyframes winner-in {
+  0% { opacity: 0; transform: scale(0.4); filter: blur(12px); }
+  55% { opacity: 1; transform: scale(1.18); filter: blur(0); }
+  100% { transform: none; }
+}
+@keyframes breathe { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+@keyframes low-pulse { 0%, 100% { transform: none; } 50% { transform: scale(1.08); } }
+@keyframes spark {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+}
+
+/* drawing the topic */
+body.ritual-lock #overlay-topic h1,
+body.ritual-lock #topic-prompt { animation: condense 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+body.ritual-lock #overlay-topic .topic-explainer,
+body.ritual-lock #topic-explainer { animation: rise 0.8s ease 0.7s both; }
+body.ritual-lock #topic-card { animation: rise 0.7s ease both; }
+body.ritual-lock .seal { animation: seal-stamp 0.55s cubic-bezier(0.3, 1.5, 0.5, 1) 0.9s both; }
+body.ritual-lock .seal::after { animation: seal-ring 0.9s ease-out 1.05s both; }
+
+/* the sides arrive */
+body.ritual-reveal #overlay-sides .stance-card:nth-child(1),
+body.ritual-reveal #side-grid .stance-card:nth-child(1) { animation: enter-left 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both, flash 1.6s ease-out 0.6s both; }
+body.ritual-reveal #overlay-sides .stance-card:nth-child(2),
+body.ritual-reveal #side-grid .stance-card:nth-child(2) { animation: enter-right 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s both, flash 1.6s ease-out 0.85s both; }
+
+/* preparation, polls, the debate */
+body.ritual-prep #overlay-timer,
+body.ritual-prep #timer-card { animation: rise 0.7s ease both; }
+body.ritual-poll #overlay-poll-indicator,
+body.ritual-poll #vote-card,
+body.ritual-pollClosed #overlay-split,
+body.ritual-pollClosed #banner { animation: rise 0.7s ease both; }
+body.ritual-debate .timer-display { animation: gong-pulse 1.4s ease-out both; }
+#overlay-poll-indicator h3 { animation: breathe 2.4s ease-in-out infinite; }
+
+/* the last ten seconds */
+body.timer-low #overlay-timer-display,
+body.timer-low #timer-display { color: var(--no-text); animation: low-pulse 1s ease-in-out infinite; }
+
+/* the winner */
+#overlay-results, #results-card { position: relative; }
+#overlay-winner { text-shadow: 0 0 26px rgba(201, 168, 76, 0.4); }
+body.ritual-winner #overlay-winner { animation: winner-in 1.5s cubic-bezier(0.2, 1.3, 0.3, 1) both; }
+body.ritual-winner #results-card { animation: rise 0.9s ease both, flash 2s ease-out 0.6s both; }
+body.ritual-winner #overlay-sway { animation: rise 0.8s ease 1s both; }
+.sparkles { position: absolute; left: 50%; top: 45%; width: 0; height: 0; pointer-events: none; }
+.sparkles i {
+  position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gold-pale); box-shadow: 0 0 10px var(--gold); opacity: 0;
+  animation: spark 1.7s ease-out var(--delay, 0s) both;
+}
+
+/* sound toggle (watch + contestant pages) */
+.sound-toggle {
+  font: inherit; font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0.3rem 0.75rem; background: transparent; color: var(--text);
+  border: 1px solid var(--border2); cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.sound-toggle:hover, .sound-toggle:focus-visible { border-color: var(--gold); color: var(--gold); }
+.sound-toggle[aria-pressed="true"] { border-color: var(--gold-dim); color: var(--gold); }
+
+/* motion off: keep every finished frame, drop the movement. The OBS overlay
+   is exempt - it is a video source on the stream, not a page someone is
+   sitting in front of, and it must animate whatever this PC's settings say. */
+@media (prefers-reduced-motion: reduce) {
+  body:not(.overlay-page) .cauldron *,
+  body:not(.overlay-page)[class*="ritual-"] *,
+  body:not(.overlay-page).timer-low *,
+  body:not(.overlay-page) #overlay-poll-indicator h3 { animation: none !important; }
+  body:not(.overlay-page) .cauldron .bubbles circle { opacity: 0.7; }
+  body:not(.overlay-page) .cauldron .steam path { opacity: 0.3; stroke-dasharray: none; }
+  body:not(.overlay-page) .sparkles { display: none; }
+}

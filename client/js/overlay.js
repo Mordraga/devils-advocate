@@ -7,6 +7,7 @@
 import { subscribe, state } from './state.js';
 import { connect } from './socket.js';
 import { formatClock, remainingMs } from './timer.js';
+import { startRitual } from './ritual.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -159,6 +160,11 @@ function render() {
 subscribe(render);
 render();
 setInterval(renderTimer, 250);
+
+// Motion for everyone; sound plays by itself on the OBS overlay, and is an
+// opt-in toggle on the watch page (which reuses this file).
+const isOverlay = document.body.classList.contains('overlay-page');
+startRitual({ autoplay: isOverlay, turnoutPops: isOverlay });
 
 // Static hosting only knows query params for now (spec's clean
 // /overlay/{session_code} routing needs a real router, added once this

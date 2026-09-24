@@ -6,6 +6,7 @@
 import { applyPatch, state, subscribe } from './state.js';
 import { castVote, getMyVote } from './api.js';
 import { getVoterId } from './voter.js';
+import { play } from './sound.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -101,6 +102,7 @@ async function vote(side) {
   try {
     const result = await castVote(roomCode, voterId, side);
     myVote = result.side;
+    play('pop');
     applyPatch({ poll: { ...state.poll, total: result.total } });
   } catch (err) {
     if (/failed: 409/.test(err.message)) message = 'Voting just closed.';

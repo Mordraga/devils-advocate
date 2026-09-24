@@ -14,6 +14,31 @@
   <div class="overlay-frame" id="overlay-frame">
 
     <div id="overlay-standby">
+      <svg class="cauldron" viewBox="0 0 200 190" role="img" aria-label="A bubbling cauldron">
+        <defs>
+          <radialGradient id="brew" cx="50%" cy="50%" r="60%">
+            <stop offset="0" stop-color="#e8d49a"/>
+            <stop offset="0.55" stop-color="#c9a84c"/>
+            <stop offset="1" stop-color="#8b1a1a"/>
+          </radialGradient>
+        </defs>
+        <g class="steam" fill="none" stroke-linecap="round">
+          <path d="M72 66 q-12 -14 0 -28 q12 -14 0 -30"/>
+          <path d="M100 62 q-12 -14 0 -28 q12 -14 0 -30"/>
+          <path d="M128 66 q-12 -14 0 -28 q12 -14 0 -30"/>
+        </g>
+        <path class="legs" d="M62 170 l-9 16 M138 170 l9 16" fill="none" stroke-linecap="round"/>
+        <path class="pot" d="M40 84 C30 150 60 178 100 178 C140 178 170 150 160 84 Z"/>
+        <ellipse class="brew" cx="100" cy="84" rx="60" ry="14" fill="url(#brew)"/>
+        <ellipse class="rim" cx="100" cy="84" rx="62" ry="15" fill="none"/>
+        <g class="bubbles">
+          <circle cx="78" cy="84" r="5"/>
+          <circle cx="98" cy="86" r="4"/>
+          <circle cx="118" cy="83" r="6"/>
+          <circle cx="132" cy="86" r="3.5"/>
+          <circle cx="66" cy="86" r="3"/>
+        </g>
+      </svg>
       <div class="page-hero-sigil">⸸ ✦ ⸸</div>
       <h2>The Cauldron Simmers</h2>
       <p id="overlay-roster"></p>
@@ -21,6 +46,7 @@
     </div>
 
     <div id="overlay-topic" hidden>
+      <span class="seal" aria-hidden="true">⸸</span>
       <h3>Tonight's Topic</h3>
       <h1 id="overlay-topic-prompt">—</h1>
       <p class="topic-explainer" id="overlay-topic-explainer"></p>

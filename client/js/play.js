@@ -9,6 +9,7 @@ import { redeemInvite, setContestantName } from './api.js';
 import { formatClock, remainingMs } from './timer.js';
 import { STEPS, describePhase, scoreboardLines } from './copy.js';
 import { el, renderStepper } from './ui.js';
+import { startRitual } from './ritual.js';
 
 const $ = (id) => document.getElementById(id);
 const NOTES_KEY = 'devils-advocate:notes:';
@@ -193,6 +194,7 @@ $('btn-change-name').addEventListener('click', () => {
 subscribe(render);
 render();
 setInterval(tick, 250);
+startRitual();
 
 token = new URLSearchParams(location.search).get('token');
 if (!token) {
