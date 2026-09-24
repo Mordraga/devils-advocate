@@ -115,3 +115,153 @@ body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
     transform: none;
   }
 }
+
+/* ── HIDDEN ATTRIBUTE ──
+   Several classes below set `display`, which would otherwise beat the
+   browser's default [hidden] rule. */
+[hidden] { display: none !important; }
+
+/* ── STEPPER (host + contestant) ──
+   Done/current/upcoming are marked with text (a check, aria-current), not
+   only color. */
+.stepper {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1.25rem;
+}
+
+.step {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border2);
+  color: var(--text-mute);
+}
+
+.step-done { color: var(--text-dim); }
+.step-current {
+  color: var(--gold-pale);
+  border-color: var(--gold);
+  background: #1a1408;
+}
+
+/* ── HOST PANEL ── */
+.host-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.session-line { color: var(--text-dim); font-size: 1rem; }
+.host-status { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.host-main .card { margin-bottom: 1.25rem; }
+.host-main summary {
+  cursor: pointer;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.host-main details[open] summary { margin-bottom: 1rem; }
+
+.now-card { padding: 2rem 1.75rem; }
+.now-eyebrow {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+.now-card h2 { font-size: clamp(1.2rem, 3.5vw, 1.8rem); margin-bottom: 0.6rem; }
+.now-card > p { font-size: 1.15rem; max-width: 60ch; }
+.now-audience { color: var(--text-dim); font-style: italic; margin-top: 0.5rem; }
+
+.now-inputs { margin-top: 1.25rem; display: grid; gap: 1rem; max-width: 34rem; }
+.poll-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.minutes-row { max-width: 12rem; }
+@media (max-width: 680px) { .poll-grid { grid-template-columns: 1fr; } }
+
+.now-timer { margin-top: 1.25rem; text-align: center; }
+.now-timer .btn { margin-top: 0.75rem; }
+
+.now-actions { margin-top: 1.5rem; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.btn-primary { font-size: 0.85rem; padding: 1.1rem 2.5rem; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.now-hint { color: var(--text-dim); font-style: italic; margin: 0; }
+.now-error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--accent);
+  color: var(--no-text);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--gold-dim);
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+}
+.link-btn:hover { color: var(--gold); }
+
+.invite-list { display: grid; gap: 0.75rem; margin-top: 1.25rem; }
+.invite-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.invite-name { min-width: 9rem; font-size: 1.15rem; color: var(--text); }
+
+.table-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+.table-prompt { font-size: 1.3rem; color: var(--gold); text-transform: none; letter-spacing: 0.02em; }
+.table-explainer { color: var(--text-dim); margin: 0.4rem 0 0.75rem; }
+.table-sides { list-style: none; display: grid; gap: 0.4rem; font-size: 1.1rem; }
+
+/* ── CONTESTANT PAGE ── */
+.play-main .card { margin-bottom: 1.25rem; }
+
+.banner { padding: 1.75rem; border-top: 3px solid var(--border2); }
+.banner h2 { font-size: clamp(1.2rem, 4vw, 1.9rem); margin-bottom: 0.5rem; }
+.banner p { font-size: 1.2rem; max-width: 60ch; }
+.banner[data-tone="go"] { border-top-color: var(--gold); }
+.banner[data-tone="poll"] { border-top-color: var(--accent); }
+.banner[data-tone="win"] { border-top-color: var(--yes-text); }
+.banner[data-tone="lose"] { border-top-color: var(--no-text); }
+.banner[data-tone="draw"] { border-top-color: var(--gold-dim); }
+
+.stance-card.mine { border-top: 3px solid var(--gold); }
+.stance-card.mine .stance-position { font-size: 1.6rem; }
+.stance-card .who { font-size: 0.95rem; color: var(--text-dim); font-style: italic; margin-top: 0.25rem; }
+
+.timer-note { text-align: center; color: var(--text-dim); font-style: italic; margin-top: 0.25rem; }
+.topic-question { font-size: clamp(1.2rem, 4vw, 1.8rem); color: var(--gold); text-transform: none; letter-spacing: 0.02em; }
+.topic-explainer { font-size: 1.15rem; color: var(--text-dim); margin-top: 0.6rem; }
+
+.name-form { display: grid; gap: 0.75rem; max-width: 24rem; }
+.notes-hint { color: var(--text-dim); font-size: 1rem; margin-bottom: 0.6rem; }
+
+/* ── READABILITY ──
+   crypt.css's dim tones are fine for decoration but too faint for the text
+   a host or contestant actually has to read mid-show. */
+.game-main .field-label { font-size: 0.6rem; color: #b3a6b3; }
+.poll-grid .field-label {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+.topic-explainer, .table-explainer { color: var(--text); }
+.now-audience, .now-hint, .timer-note, .stance-card .who, .notes-hint, .session-line { color: #b3a6b3; }
+.step { color: #7d717d; }
+.step-done { color: #b3a6b3; }
+.step-current { color: var(--gold-pale); }
+.host-main .btn-ghost, .play-main .btn-ghost { color: #c2b6c2; border-color: #4a3a4a; }
+.play-main .link-btn { color: #b3a6b3; }

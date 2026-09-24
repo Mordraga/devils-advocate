@@ -57,6 +57,12 @@ export const createSession = (title, createdBy) =>
 
 export const getSession = (id) => request(`/sessions/${id}`);
 
+// One call: session + two unnamed seats + first round + an invite per seat.
+export const launchSession = (title, createdBy) =>
+  request('/sessions/launch', { method: 'POST', body: JSON.stringify({ title, created_by: createdBy }) });
+
+export const getHostState = async (sessionId) => normalizeHostState(await request(`/sessions/${sessionId}/host-state`));
+
 export const addContestant = (sessionId, { displayName, seat, pronouns, avatarUrl, accentColor }) =>
   request(`/sessions/${sessionId}/contestants`, {
     method: 'POST',
@@ -106,6 +112,10 @@ export const createInvite = (sessionId, contestantId) =>
 export const redeemInvite = (token) =>
   request('/public/invites/redeem', { method: 'POST', body: JSON.stringify({ token }) });
 
+// A contestant choosing the name everyone will see - also what marks them joined.
+export const setContestantName = (token, displayName) =>
+  request('/public/invites/profile', { method: 'POST', body: JSON.stringify({ token, display_name: displayName }) });
+
 export const setOverlayVisibility = (sessionId, hidden) =>
   request(`/sessions/${sessionId}/overlay-visibility`, { method: 'POST', body: JSON.stringify({ hidden }) });
 
@@ -124,14 +134,24 @@ function normalizeContestant(contestant) {
   };
 }
 
+function normalizeRosterEntry(entry) {
+  return entry ? { name: entry.display_name, joined: entry.joined } : null;
+}
+
+function normalizeTimer(t) {
+  return { startedAt: t.started_at, endsAt: t.ends_at, pausedAt: t.paused_at, remainingMs: t.remaining_ms };
+}
+
 export function normalizePublicState(raw) {
   return {
     sessionCode: raw.public_code,
+    roundId: raw.round_id,
     version: raw.version,
     serverOffsetMs: parseTime(raw.server_time) - Date.now(),
     phase: raw.phase,
     topic: raw.topic && {
       prompt: raw.topic.prompt,
+      explainer: raw.topic.explainer,
       sideA: raw.topic.side_a,
       sideB: raw.topic.side_b,
       category: raw.topic.category,
@@ -141,6 +161,10 @@ export function normalizePublicState(raw) {
       A: normalizeContestant(raw.contestants.A),
       B: normalizeContestant(raw.contestants.B),
     },
+    roster: {
+      one: normalizeRosterEntry(raw.roster.one),
+      two: normalizeRosterEntry(raw.roster.two),
+    },
     timer: {
       startedAt: raw.timer.started_at,
       endsAt: raw.timer.ends_at,
@@ -148,7 +172,52 @@ export function normalizePublicState(raw) {
       remainingMs: raw.timer.remaining_ms,
     },
     winner: raw.winner,
+    results: raw.results && {
+      openingA: raw.results.opening_a,
+      openingB: raw.results.opening_b,
+      closingA: raw.results.closing_a,
+      closingB: raw.results.closing_b,
+      swayA: raw.results.sway_a,
+      swayB: raw.results.sway_b,
+    },
   };
 }
 
 export const getPublicState = async (publicCode) => normalizePublicState(await request(`/public/sessions/${publicCode}/state`));
+
+// The host-only, unmasked view (GET /sessions/{id}/host-state).
+export function normalizeHostState(raw) {
+  return {
+    session: {
+      id: raw.session.id,
+      publicCode: raw.session.public_code,
+      title: raw.session.title,
+      status: raw.session.status,
+    },
+    round: raw.round && {
+      id: raw.round.id,
+      phase: raw.round.phase,
+      status: raw.round.status,
+      timer: normalizeTimer(raw.round),
+    },
+    topic: raw.topic && {
+      prompt: raw.topic.prompt,
+      explainer: raw.topic.explainer,
+      sideA: raw.topic.side_a,
+      sideB: raw.topic.side_b,
+      category: raw.topic.category,
+    },
+    contestants: raw.contestants.map((c) => ({
+      id: c.id,
+      seat: c.seat,
+      name: c.display_name,
+      joined: c.joined,
+      side: c.side,
+    })),
+    opening: raw.opening,
+    closing: raw.closing,
+    winner: raw.winner,
+    version: raw.version,
+    serverOffsetMs: parseTime(raw.server_time) - Date.now(),
+  };
+}

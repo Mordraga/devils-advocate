@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Devil's Advocate — Overlay</title>
   <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./css/crypt.css">
   <link rel="stylesheet" href="./css/game.css">
 </head>
@@ -15,11 +16,13 @@
     <div id="overlay-standby">
       <div class="page-hero-sigil">⸸ ✦ ⸸</div>
       <h2>The Cauldron Simmers</h2>
+      <p id="overlay-roster"></p>
     </div>
 
     <div id="overlay-topic" hidden>
       <h3>Tonight's Topic</h3>
       <h1 id="overlay-topic-prompt">—</h1>
+      <p class="topic-explainer" id="overlay-topic-explainer"></p>
     </div>
 
     <div id="overlay-sides" class="stance-grid" hidden>
@@ -45,8 +48,9 @@
     </div>
 
     <div id="overlay-results" hidden>
-      <h3>Audience Sway</h3>
+      <h3 id="overlay-results-label">Winner</h3>
       <h1 id="overlay-winner">—</h1>
+      <p id="overlay-sway"></p>
     </div>
 
     <div id="overlay-technical-pause" hidden>

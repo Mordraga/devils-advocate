@@ -1,0 +1,8 @@
+{
+  "name": "devils-advocate-e2e",
+  "private": true,
+  "description": "Browser end-to-end test for Devil's Advocate",
+  "dependencies": {
+    "puppeteer-core": "^25.0.0"
+  }
+}

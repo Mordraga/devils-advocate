@@ -1,260 +1,550 @@
-// Host control panel (spec 5.A). Wires each control to its REST call
-// against the draga-server session/round endpoints. Auth is a shared
-// admin token (api.js prompts for it once, then caches it in
-// localStorage) - not the real per-host login spec section 10 describes.
+// Host control panel (spec 5.A), built around one idea: the round's phase
+// decides the single thing to do next. guide.js describes each step (pure,
+// tested); this file draws it and turns the primary button into the right
+// sequence of API calls. Auth is a shared admin token (api.js prompts for
+// it once) - not the real per-host login spec section 10 describes.
 
-import { PHASES, applyPatch, state, subscribe } from './state.js';
+import { PHASES, state, subscribe } from './state.js';
 import * as api from './api.js';
-import { connect } from './socket.js';
+import { connect, disconnect } from './socket.js';
 import { withApi } from './config.js';
 import { formatClock, remainingMs } from './timer.js';
+import { DEFAULT_MINUTES, STEPS, checkPoll, complement, describe, pollSideLabels, seatName } from './guide.js';
+import { copyText, el, flash, renderStepper } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
+const SAVED_KEY = 'devils-advocate:host-session-id';
+const REVEAL_INDEX = PHASES.indexOf('REVEAL');
 
-// What the host is currently running. Persisted to localStorage so a page
-// refresh mid-show picks the session back up (spec section 12: refreshing
-// must not lose the active match). Ids aren't secrets - the admin token
-// is what authorizes anything.
-const SAVED_KEY = 'devils-advocate:host-session';
-let sessionId = null;
-let roundId = null;
-let contestants = { one: null, two: null }; // { id, name } per seat
+let sessionId = loadSavedSessionId();
+let host = null; // latest host-state from the server (api.normalizeHostState)
+const ui = { skipWait: false };
+const inviteCache = {}; // seat -> the invite the server handed back (raw token, shown once)
+let busy = false;
+let structureKey = '';
+let overlayHidden = false;
 
-function saveHostSession() {
+// ---- persistence -----------------------------------------------------------
+// A refresh mid-show must not lose the session (spec section 12). The id
+// isn't a secret - the admin token is what authorizes anything.
+
+function loadSavedSessionId() {
   try {
-    localStorage.setItem(SAVED_KEY, JSON.stringify({ sessionId, roundId, contestants }));
+    return localStorage.getItem(SAVED_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveSessionId() {
+  try {
+    localStorage.setItem(SAVED_KEY, sessionId);
   } catch {
     // Storage blocked - the session just won't survive a refresh.
   }
 }
 
-function loadHostSession() {
-  try {
-    return JSON.parse(localStorage.getItem(SAVED_KEY));
-  } catch {
-    return null;
-  }
-}
-
-function forgetHostSession() {
+function forgetSession() {
+  sessionId = null;
+  host = null;
+  for (const seat of Object.keys(inviteCache)) delete inviteCache[seat];
+  ui.skipWait = false;
+  structureKey = '';
   try {
     localStorage.removeItem(SAVED_KEY);
   } catch {
     // ignore
   }
+  disconnect();
+  render();
 }
+
+// ---- small helpers ---------------------------------------------------------
 
 function logEvent(text) {
   const log = $('event-log');
-  if (log.firstElementChild?.textContent === 'No events yet.') log.innerHTML = '';
-  const li = document.createElement('li');
+  if (log.firstElementChild?.textContent === 'Nothing yet.') log.replaceChildren();
   const time = new Date().toLocaleTimeString();
-  li.innerHTML = `<span class="event-actor">${time}</span> — ${text}`;
-  log.prepend(li);
+  log.prepend(el('li', {}, el('span', { class: 'event-actor', text: time }), ` — ${text}`));
 }
 
-// Round-returning endpoints all send back the same shape (phase, timer
-// fields, etc.) - feeding it into the shared state keeps phase-pill/
-// timer-display current without a separate local copy.
-function applyRound(round) {
-  applyPatch({
-    phase: round.phase,
-    timer: {
-      startedAt: round.started_at,
-      endsAt: round.ends_at,
-      pausedAt: round.paused_at,
-      remainingMs: round.remaining_ms,
-    },
-  });
+function showError(message) {
+  const box = $('now-error');
+  box.textContent = message;
+  box.hidden = false;
 }
 
-async function run(label, fn) {
-  logEvent(`${label}…`);
+function hideError() {
+  $('now-error').hidden = true;
+}
+
+function showLinkFallback(label, url) {
+  // Clipboard blocked (e.g. an insecure origin): let the host copy by hand.
+  window.prompt(`Copy this ${label}:`, url);
+}
+
+function pageLink(path, query) {
+  return withApi(new URL(`${path}?${query}`, location.href).href);
+}
+
+// ---- loading state ---------------------------------------------------------
+
+let refreshTimer = null;
+function scheduleRefresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => refresh().catch(() => {}), 120);
+}
+
+async function refresh() {
+  if (!sessionId) return;
   try {
-    return await fn();
+    host = await api.getHostState(sessionId);
   } catch (err) {
-    logEvent(`${label} failed — ${err.message}`);
-    return null;
-  }
-}
-
-async function resumeSession() {
-  const saved = loadHostSession();
-  if (!saved?.sessionId) throw new Error('no saved session in this browser');
-
-  let session;
-  try {
-    session = await api.getSession(saved.sessionId);
-  } catch (err) {
-    forgetHostSession();
+    if (/failed: 404/.test(err.message)) {
+      logEvent('That session no longer exists on the server');
+      forgetSession();
+      return;
+    }
     throw err;
   }
-
-  sessionId = session.id;
-  roundId = session.current_round_id ?? saved.roundId;
-  contestants = saved.contestants ?? { one: null, two: null };
-  $('input-contestant-a').value = contestants.one?.name ?? '';
-  $('input-contestant-b').value = contestants.two?.name ?? '';
-
-  // Connecting also pulls the current phase/timer, so the host sees the
-  // same state the overlay does.
-  connect(session.public_code);
-  logEvent(`Resumed session ${session.public_code}`);
+  // Mid-action, hold the redraw: otherwise the next step's title shows up
+  // while the button still says "Working...". runPrimary redraws once at the end.
+  if (!busy) render();
 }
 
-$('btn-create-session').addEventListener('click', () =>
-  run('Create session', async () => {
-    const session = await api.createSession('Devil\'s Advocate', 'mordraga');
-    sessionId = session.id;
-    contestants = { one: null, two: null };
-    logEvent(`Session created (${session.public_code})`);
+// ---- the sequences behind each primary button ------------------------------
 
-    const round = await api.createRound(sessionId);
-    roundId = round.id;
-    saveHostSession();
-    connect(session.public_code);
-    applyRound(round);
-    logEvent('Round created');
-  })
-);
+const current = () => api.getHostState(sessionId);
 
-$('btn-resume-session').addEventListener('click', () => run('Resume session', resumeSession));
+async function moveTo(target) {
+  const h = await current();
+  if (h.round.phase !== target) await api.transitionPhase(h.round.id, target);
+}
 
-$('btn-save-contestants').addEventListener('click', () =>
-  run('Save contestants', async () => {
-    if (!sessionId) throw new Error('no active session');
-    const nameOne = $('input-contestant-a').value;
-    const nameTwo = $('input-contestant-b').value;
-    const one = await api.addContestant(sessionId, { seat: 'one', displayName: nameOne });
-    const two = await api.addContestant(sessionId, { seat: 'two', displayName: nameTwo });
-    contestants = { one: { id: one.id, name: nameOne }, two: { id: two.id, name: nameTwo } };
-    saveHostSession();
-  })
-);
+function readMinutes() {
+  const minutes = Number($('input-minutes')?.value);
+  if (!(minutes > 0)) throw new Error('Enter a number of minutes.');
+  return minutes;
+}
 
-$('btn-draw-topic').addEventListener('click', () =>
-  run('Draw topic', async () => {
-    if (!roundId) throw new Error('no active round');
-    applyRound(await api.drawTopic(roundId));
-  })
-);
+function readPoll() {
+  const result = checkPoll($('poll-a')?.value ?? '', $('poll-b')?.value ?? '');
+  if (!result.ok) throw new Error(result.error);
+  return result;
+}
 
-$('btn-assign-sides').addEventListener('click', () =>
-  run('Assign sides', async () => applyRound(await api.assignSides(roundId)))
-);
+const actions = {
+  async launch() {
+    const out = await api.launchSession("Devil's Advocate", 'mordraga');
+    sessionId = out.session.id;
+    saveSessionId();
+    for (const invite of out.invites) inviteCache[invite.seat] = invite;
+    ui.skipWait = false;
+    overlayHidden = false;
+    structureKey = '';
+    connect(out.session.public_code);
+    logEvent(`Session ${out.session.public_code} started`);
+  },
 
-$('btn-reveal').addEventListener('click', () =>
-  run('Reveal', async () => applyRound(await api.transitionPhase(roundId, 'REVEAL')))
-);
+  // Draw a topic and assign sides in one go. Each step checks what is
+  // already done, so pressing it again after a failure just carries on.
+  async deal() {
+    let h = await current();
+    if (!h.topic) await api.drawTopic(h.round.id);
+    h = await current();
+    if (!h.contestants.some((c) => c.side)) await api.assignSides(h.round.id);
+    if (h.round.phase === 'LOBBY') await api.transitionPhase(h.round.id, 'TOPIC_LOCKED');
+    logEvent('Topic and sides locked in');
+  },
 
-$('btn-phase-advance').addEventListener('click', () =>
-  run('Advance phase', async () => {
-    const to = PHASES[PHASES.indexOf(state.phase) + 1];
-    if (!to) throw new Error(`${state.phase} has no next phase`);
-    applyRound(await api.transitionPhase(roundId, to));
-  })
-);
+  async reveal() {
+    await moveTo('REVEAL');
+    logEvent('Topic and sides revealed');
+  },
 
-$('btn-phase-back').addEventListener('click', () =>
-  run('Previous phase', async () => {
-    const to = PHASES[PHASES.indexOf(state.phase) - 1];
-    if (!to) throw new Error(`${state.phase} has no previous phase`);
-    applyRound(await api.transitionPhase(roundId, to));
-  })
-);
+  async startPrep() {
+    const minutes = readMinutes();
+    const h = await current();
+    // Timer first, then the phase: everyone's screen switches to a clock
+    // that is already running, never to a blank "--:--".
+    await api.startTimer(h.round.id, minutes * 60_000);
+    await moveTo('PREPARATION');
+    logEvent(`Preparation started (${minutes} min)`);
+  },
 
-// The API has start and pause but no resume (spec section 9), so resuming
-// is just starting again with whatever time was left when it was paused.
-$('btn-timer-start').addEventListener('click', () =>
-  run('Start timer', async () => {
-    const { pausedAt, remainingMs: left } = state.timer;
-    const durationMs = pausedAt != null && left > 0 ? left : (Number($('input-timer-minutes').value) || 15) * 60_000;
-    applyRound(await api.startTimer(roundId, durationMs));
-  })
-);
+  async openPoll() {
+    await moveTo('OPENING_POLL');
+    logEvent('Opening poll open');
+  },
 
-$('btn-timer-pause').addEventListener('click', () => run('Pause timer', async () => applyRound(await api.pauseTimer(roundId))));
+  async startDebate() {
+    const poll = readPoll();
+    const minutes = readMinutes();
+    let h = await current();
+    await api.recordOpeningPoll(h.round.id, poll.a, poll.b);
+    await api.startTimer(h.round.id, minutes * 60_000);
+    await moveTo('DEBATE');
+    logEvent(`Opening poll recorded (${poll.a} / ${poll.b}); debate started (${minutes} min)`);
+  },
 
-$('btn-finalize').addEventListener('click', () =>
-  run('Finalize round', async () => {
-    await api.recordOpeningPoll(roundId, Number($('input-opening-a').value), Number($('input-opening-b').value));
-    await api.recordClosingPoll(roundId, Number($('input-closing-a').value), Number($('input-closing-b').value));
-    const round = await api.finalizeRound(roundId);
-    applyRound(round);
-    // state.winner is 'A' | 'B' | 'draw' (see overlay.js); the API only
-    // gives back a contestant id, so map it against the round's own
-    // side assignments rather than duplicating that logic here.
-    let winner = 'draw';
-    if (round.winner_contestant_id === round.side_a_contestant_id) winner = 'A';
-    else if (round.winner_contestant_id === round.side_b_contestant_id) winner = 'B';
-    applyPatch({ winner });
-  })
-);
+  async closePoll() {
+    await moveTo('CLOSING_POLL');
+    logEvent('Closing poll open');
+  },
 
-$('btn-void').addEventListener('click', () => run('Void round', () => api.voidRound(roundId)));
-$('btn-reroll').addEventListener('click', () =>
-  run('Reroll', async () => applyRound(await api.rerollRound(roundId)))
-);
+  async finish() {
+    const poll = readPoll();
+    let h = await current();
+    await api.recordClosingPoll(h.round.id, poll.a, poll.b);
+    h = await current();
+    if (h.round.status === 'live') await api.finalizeRound(h.round.id);
+    await moveTo('RESULTS');
+    logEvent(`Closing poll recorded (${poll.a} / ${poll.b}); winner announced`);
+  },
 
-let overlayHidden = false;
-$('btn-emergency-hide').addEventListener('click', () =>
-  run(overlayHidden ? 'Show overlay' : 'Emergency hide overlay', async () => {
-    if (!sessionId) throw new Error('no active session');
-    overlayHidden = !overlayHidden;
-    await api.setOverlayVisibility(sessionId, overlayHidden);
-  })
-);
+  async nextRound() {
+    const h = await current();
+    if (h.round?.phase === 'RESULTS') await api.transitionPhase(h.round.id, 'ARCHIVED');
+    await api.createRound(sessionId);
+    structureKey = '';
+    logEvent('New round started');
+  },
+};
 
-async function copyLink(url, label) {
+async function runPrimary() {
+  const action = $('btn-primary').dataset.action;
+  if (busy || !actions[action]) return;
+  busy = true;
+  hideError();
+  render();
   try {
-    await navigator.clipboard.writeText(url);
-    logEvent(`Copied ${label}`);
-  } catch {
-    logEvent(`${label}: ${url}`);
+    await actions[action]();
+  } catch (err) {
+    showError(err.message);
+    logEvent(`${action} failed - ${err.message}`);
+  } finally {
+    busy = false;
+    try {
+      await refresh();
+    } catch (err) {
+      showError(err.message);
+    }
+    render();
   }
 }
 
-document.querySelectorAll('[data-copy-url]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const surface = btn.dataset.copyUrl;
-    if (!state.sessionCode) return logEvent('Create or resume a session first');
-    // These open in other browsers (OBS, viewers) that don't share this
-    // one's saved API address, so it travels in the link.
-    const url = withApi(`${location.origin}/${surface}.html?session=${state.sessionCode}`);
-    return copyLink(url, `${surface} URL`);
-  });
-});
-
-// Contestant links are real invite tokens (spec section 10), not a
-// guessed URL - each one is minted server-side and shown exactly once.
-async function inviteContestant(seat, label) {
-  return run(`Invite ${label}`, async () => {
-    if (!sessionId) throw new Error('no active session');
-    const contestant = contestants[seat];
-    if (!contestant) throw new Error('save contestants first');
-    const invite = await api.createInvite(sessionId, contestant.id);
-    await copyLink(withApi(invite.url), `${label} invite (expires ${new Date(invite.expires_at).toLocaleString()})`);
-  });
+// Secondary controls: run one call, then refresh; report failures inline.
+async function runSecondary(label, fn) {
+  hideError();
+  try {
+    await fn();
+    logEvent(label);
+    await refresh();
+  } catch (err) {
+    showError(err.message);
+    logEvent(`${label} failed - ${err.message}`);
+  }
 }
 
-$('btn-invite-one').addEventListener('click', () => inviteContestant('one', 'Contestant One'));
-$('btn-invite-two').addEventListener('click', () => inviteContestant('two', 'Contestant Two'));
+// ---- rendering -------------------------------------------------------------
 
-function renderTimer() {
-  $('timer-display').textContent = formatClock(remainingMs(state.timer, state.serverOffsetMs));
+function renderConnection() {
+  const pill = $('connection-pill');
+  pill.dataset.status = state.connectionStatus;
+  pill.textContent =
+    { online: 'Live', connecting: 'Connecting…', stale: 'Reconnecting…', offline: 'Offline' }[state.connectionStatus] ??
+    state.connectionStatus;
+}
+
+function inviteSignature() {
+  return host ? host.contestants.map((c) => `${c.seat}:${c.name}:${c.joined}`).join('|') : '';
+}
+
+async function copyInvite(contestant, button) {
+  try {
+    let invite = inviteCache[contestant.seat];
+    if (!invite) {
+      invite = await api.createInvite(sessionId, contestant.id);
+      inviteCache[contestant.seat] = invite;
+    }
+    const url = withApi(invite.url);
+    if (await copyText(url)) {
+      flash(button, 'Copied ✓');
+      logEvent(`Copied invite link for ${seatName(contestant)}`);
+    } else {
+      showLinkFallback('invite link', url);
+    }
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+// Rebuilt only when who-has-joined changes, so a "Copied ✓" flash isn't
+// wiped by every live update.
+function renderInvites(container, visible) {
+  container.hidden = !visible || !host;
+  if (container.hidden) return;
+  const signature = inviteSignature();
+  if (container.dataset.signature === signature) return;
+  container.dataset.signature = signature;
+
+  container.replaceChildren(
+    ...host.contestants.map((contestant) => {
+      const button = el('button', {
+        class: 'btn btn-ghost',
+        text: `Copy ${contestant.joined ? 'their' : 'invite'} link`,
+        attrs: { type: 'button' },
+        on: { click: () => copyInvite(contestant, button) },
+      });
+      return el(
+        'div',
+        { class: 'invite-row' },
+        el('span', { class: 'invite-name', text: seatName(contestant) }),
+        el('span', {
+          class: `badge ${contestant.joined ? 'badge-gold' : ''}`,
+          text: contestant.joined ? '✓ Joined' : 'Waiting to join',
+        }),
+        button,
+      );
+    }),
+  );
+}
+
+function buildInputs(d) {
+  const box = $('now-inputs');
+  const rows = [];
+
+  if (d.poll) {
+    const previous = d.poll === 'opening' ? host.opening : host.closing;
+    const a = el('input', {
+      class: 'crypt-input',
+      attrs: { id: 'poll-a', type: 'number', min: '0', max: '100', step: 'any', inputmode: 'decimal' },
+    });
+    const b = el('input', {
+      class: 'crypt-input',
+      attrs: { id: 'poll-b', type: 'number', min: '0', max: '100', step: 'any', inputmode: 'decimal' },
+    });
+    if (previous) {
+      a.value = previous.a;
+      b.value = previous.b;
+    }
+    // Twitch polls total 100, so typing one side fills in the other.
+    a.addEventListener('input', () => {
+      b.value = complement(a.value);
+    });
+    b.addEventListener('input', () => {
+      a.value = complement(b.value);
+    });
+    rows.push(
+      el(
+        'div',
+        { class: 'poll-grid' },
+        el('div', {}, el('label', { class: 'field-label', attrs: { for: 'poll-a', id: 'poll-a-label' } }), a),
+        el('div', {}, el('label', { class: 'field-label', attrs: { for: 'poll-b', id: 'poll-b-label' } }), b),
+      ),
+    );
+  }
+
+  if (d.minutes) {
+    rows.push(
+      el(
+        'div',
+        { class: 'minutes-row' },
+        el('label', { class: 'field-label', text: d.minutes.label, attrs: { for: 'input-minutes' } }),
+        el('input', {
+          class: 'crypt-input',
+          attrs: { id: 'input-minutes', type: 'number', min: '1', step: 'any', value: String(d.minutes.value) },
+        }),
+      ),
+    );
+  }
+
+  box.replaceChildren(...rows);
+}
+
+function renderTable() {
+  const card = $('table-card');
+  card.hidden = !host?.topic;
+  if (card.hidden) return;
+
+  const revealed = PHASES.indexOf(host.round.phase) >= REVEAL_INDEX;
+  $('table-visibility').textContent = revealed ? 'Everyone can see this' : 'Only you can see this yet';
+  $('table-prompt').textContent = host.topic.prompt;
+  $('table-explainer').textContent = host.topic.explainer ?? '';
+
+  const argues = (side, text) => {
+    const contestant = host.contestants.find((c) => c.side === side);
+    return el('li', { text: `Side ${side} - ${text}: ${contestant ? seatName(contestant) : 'not assigned yet'}` });
+  };
+  $('table-sides').replaceChildren(argues('A', host.topic.sideA), argues('B', host.topic.sideB));
+}
+
+function timerPhaseLabel(phase) {
+  return phase === 'PREPARATION' ? 'Preparation timer' : phase === 'DEBATE' ? 'Debate timer' : 'Timer';
+}
+
+function renderTimer(d) {
+  const box = $('now-timer');
+  box.hidden = !d.timer || !host?.round;
+  if (box.hidden) return;
+
+  const timer = host.round.timer;
+  $('now-timer-label').textContent = timerPhaseLabel(host.round.phase) + (timer.pausedAt != null ? ' (paused)' : '');
+  $('timer-display').textContent = formatClock(remainingMs(timer, host.serverOffsetMs));
+  $('btn-timer-toggle').textContent =
+    timer.startedAt == null ? 'Start timer' : timer.pausedAt != null ? 'Resume timer' : 'Pause timer';
 }
 
 function render() {
-  $('connection-pill').dataset.status = state.connectionStatus;
-  $('connection-pill').textContent = { online: 'Live', connecting: 'Connecting…', stale: 'Reconnecting…', offline: 'Offline' }[state.connectionStatus] ?? state.connectionStatus;
-  $('phase-pill').textContent = `Phase: ${state.phase}`;
-  renderTimer();
+  renderConnection();
+  const d = describe(host, ui);
+
+  $('session-line').textContent = host ? `Session ${host.session.publicCode}` : 'No session running';
+  $('phase-pill').textContent = host?.round ? `Phase: ${host.round.phase.replace('_', ' ')}` : 'No round';
+
+  $('stepper').hidden = d.index < 0;
+  renderStepper($('stepper'), STEPS, d.index);
+
+  $('now-step').textContent = d.index >= 0 ? `Step ${d.index + 1} of ${STEPS.length}` : 'Ready when you are';
+  $('now-title').textContent = d.title;
+  $('now-blurb').textContent = d.blurb;
+  const audience = $('now-audience');
+  audience.hidden = !d.audience;
+  audience.textContent = d.audience ? `The audience sees: ${d.audience}` : '';
+
+  renderInvites($('now-invites'), Boolean(d.showInvites));
+  renderInvites($('links-invites'), Boolean(host) && !d.showInvites);
+
+  // Inputs are rebuilt only when the step changes, so typing survives live updates.
+  const key = [d.primary.id, d.poll ?? '', d.minutes?.key ?? ''].join('|');
+  if (key !== structureKey && (host || d.primary.id === 'launch')) {
+    structureKey = key;
+    buildInputs(d);
+  }
+  if (d.poll && host) {
+    const labels = pollSideLabels(host);
+    const a = $('poll-a-label');
+    const b = $('poll-b-label');
+    if (a) a.textContent = `${labels.a} (%)`;
+    if (b) b.textContent = `${labels.b} (%)`;
+  }
+
+  renderTimer(d);
+  renderTable();
+
+  const primary = $('btn-primary');
+  primary.textContent = busy ? 'Working…' : d.primary.label;
+  primary.disabled = busy || Boolean(d.primary.disabled);
+  primary.dataset.action = d.primary.id;
+  $('now-hint').textContent = busy ? '' : (d.primary.hint ?? '');
+  $('btn-skip-wait').hidden = !d.canSkipWait || ui.skipWait;
+
+  // Secondary controls only make sense with a session running.
+  for (const id of ['btn-copy-overlay', 'btn-copy-watch', 'btn-back', 'btn-hide', 'btn-void', 'btn-reroll', 'btn-forget']) {
+    $(id).disabled = !host;
+  }
 }
 
-subscribe(render);
-render();
-setInterval(renderTimer, 250);
+// ---- wiring ----------------------------------------------------------------
 
-// Pick the previous session back up on refresh (only if this browser has
-// one saved, so a first visit doesn't prompt for a token or log a failure).
-if (loadHostSession()) run('Resume session', resumeSession);
+$('btn-primary').addEventListener('click', runPrimary);
+
+$('btn-skip-wait').addEventListener('click', () => {
+  ui.skipWait = true;
+  render();
+});
+
+$('btn-timer-toggle').addEventListener('click', () =>
+  runSecondary('Timer changed', async () => {
+    const h = await current();
+    const timer = h.round.timer;
+    if (timer.startedAt == null) {
+      const minutes = h.round.phase === 'DEBATE' ? DEFAULT_MINUTES.debate : DEFAULT_MINUTES.prep;
+      await api.startTimer(h.round.id, minutes * 60_000);
+    } else if (timer.pausedAt == null) {
+      await api.pauseTimer(h.round.id);
+    } else {
+      // The API has start and pause but no resume, so resuming is starting
+      // again with whatever time was left.
+      await api.startTimer(h.round.id, timer.remainingMs);
+    }
+  }),
+);
+
+async function copyShowLink(page, label, button) {
+  if (!host) return;
+  const url = pageLink(page, `session=${host.session.publicCode}`);
+  if (await copyText(url)) {
+    flash(button, 'Copied ✓');
+    logEvent(`Copied ${label} link`);
+  } else {
+    showLinkFallback(`${label} link`, url);
+  }
+}
+
+$('btn-copy-overlay').addEventListener('click', (e) => copyShowLink('overlay.html', 'overlay', e.currentTarget));
+$('btn-copy-watch').addEventListener('click', (e) => copyShowLink('watch.html', 'audience', e.currentTarget));
+
+$('btn-back').addEventListener('click', () =>
+  runSecondary('Went back one phase', async () => {
+    const h = await current();
+    const previous = PHASES[PHASES.indexOf(h.round.phase) - 1];
+    if (!previous) throw new Error('Already at the first phase.');
+    await api.transitionPhase(h.round.id, previous);
+  }),
+);
+
+$('btn-hide').addEventListener('click', () =>
+  runSecondary(overlayHidden ? 'Overlay shown' : 'Overlay hidden', async () => {
+    overlayHidden = !overlayHidden;
+    $('btn-hide').textContent = overlayHidden ? 'Show overlay again' : 'Emergency hide overlay';
+    await api.setOverlayVisibility(sessionId, overlayHidden);
+  }),
+);
+
+$('btn-void').addEventListener('click', () => {
+  if (!window.confirm('Void this round? It stays in the log but does not count toward results.')) return;
+  runSecondary('Round voided', async () => {
+    await api.voidRound((await current()).round.id);
+  });
+});
+
+$('btn-reroll').addEventListener('click', () => {
+  if (!window.confirm('Clear both poll results for this round? Topic and sides stay.')) return;
+  runSecondary('Poll results cleared', async () => {
+    await api.rerollRound((await current()).round.id);
+  });
+});
+
+$('btn-forget').addEventListener('click', () => {
+  if (!window.confirm('Forget this session on this browser? The session itself keeps running on the server.')) return;
+  forgetSession();
+  logEvent('Forgot the saved session');
+});
+
+let lastVersion = -1;
+subscribe(() => {
+  renderConnection();
+  // Any broadcast means something changed - refetch the host view.
+  if (state.version !== lastVersion) {
+    lastVersion = state.version;
+    if (sessionId) scheduleRefresh();
+  }
+});
+
+render();
+setInterval(() => {
+  if (host) renderTimer(describe(host, ui));
+}, 250);
+
+// Pick the previous session back up after a refresh.
+if (sessionId) {
+  refresh()
+    .then(() => {
+      if (host) {
+        connect(host.session.publicCode);
+        logEvent(`Resumed session ${host.session.publicCode}`);
+      }
+    })
+    .catch((err) => showError(err.message));
+}

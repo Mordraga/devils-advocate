@@ -44,25 +44,41 @@ admin token (`ADMIN_SESSION_SECRET`). A refresh resumes the session.
 
 ## Status
 
-Page shells styled with the site's shared Crypt design system
-(`client/css/crypt.css`, vendored from the main Mordraga.me site). JS
-modules are wired against `draga-server`'s live API and WebSocket
-contract (verified there via integration tests), but not yet exercised
-in an actual browser against a running server:
+The full loop works end to end in a real browser (see Tests below).
 
-- `state.js` — shared pub/sub state, camelCase throughout.
-- `api.js` — REST wrapper; normalizes the server's snake_case
-  `PublicSessionStateOut` payload into `state`'s shape, and holds the
-  admin token (prompted once, cached in `localStorage` — an interim
-  stand-in for the real login flow spec section 10 describes).
-- `socket.js` — WebSocket client: version-gap detection triggers a REST
-  resync (spec 11/12), reconnects with exponential backoff.
-- `host.js` — session/round controls, plus per-contestant invite links
-  (each minted server-side, shown once, copied to clipboard).
-- `overlay.js` — also drives `watch.html`, since spec 5.D says it
-  "mirrors the overlay"; reacts to the host's emergency-hide toggle.
-- `play.js` — identity now comes from redeeming a real invite token
-  (`?token=` query param) instead of a guessable `?seat=A` param.
+- **Host** (`host.html`) is guided: the round's phase decides the one thing to
+  do next. Step one is inviting - *Start a session* creates two invite links,
+  contestants pick their own names when they join, and the host sees who has
+  arrived. One big button then moves through: draw topic & sides, reveal,
+  start prep, open the opening poll (enter the result, autofilled to total
+  100), debate, closing poll, announce the winner, next round. The host can see
+  the topic and sides before the audience does. Rarely-needed controls (back a
+  phase, void, clear polls, emergency hide) sit under "More controls". A
+  refresh resumes the session.
+- **Contestants** (`play.html`) see a plain-language banner for every phase
+  (what is happening, what to do), a step indicator, the question with its
+  explainer line, their own stance and their opponent's, a live countdown,
+  per-round notes (private, kept in their browser), and at the end the winner
+  and the swing.
+- **Overlay / watch** show the question and explainer, "Alice vs Bob" on
+  standby, and the winner with the swing.
 
-Not yet built: topic admin UI, and the "ritualistic" motion design
-(spec section 6) beyond basic fade-ins.
+Modules: `state.js` (shared pub/sub), `api.js` (REST + snake_case -> camelCase),
+`socket.js` (WebSocket with version-gap resync), `config.js` (API address),
+`timer.js` (countdown maths), `guide.js` (host step logic) and `copy.js`
+(contestant wording) - the last three are pure and unit-tested.
+
+Not yet built: topic admin UI, and the "ritualistic" motion design (spec
+section 6) beyond basic fade-ins.
+
+## Tests
+
+```bash
+node --test "client/tests/*.test.mjs"     # pure logic: no browser needed
+
+# Full game in real Chrome (host + two contestants + watch). Needs the server
+# running (CORS_ORIGINS / CLIENT_BASE_URL set to the client url) and the
+# client served on :8080.
+cd e2e && npm install
+node full-game.js http://localhost:8080 <ADMIN_SESSION_SECRET> ./shots
+```

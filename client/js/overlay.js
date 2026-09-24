@@ -32,10 +32,10 @@ function sectionsForPhase(phase, hidden) {
       return ['overlay-topic', 'overlay-sides'];
     case 'PREPARATION':
     case 'DEBATE':
-      return ['overlay-sides', 'overlay-timer'];
+      return ['overlay-topic', 'overlay-sides', 'overlay-timer'];
     case 'OPENING_POLL':
     case 'CLOSING_POLL':
-      return ['overlay-sides', 'overlay-poll-indicator'];
+      return ['overlay-topic', 'overlay-sides', 'overlay-poll-indicator'];
     case 'RESULTS':
     case 'ARCHIVED':
       return ['overlay-results'];
@@ -53,6 +53,25 @@ function setConnectionPill(status) {
   if (pill.classList.contains('stale-indicator')) pill.hidden = status === 'online';
 }
 
+// "Alice vs Bob" once both have joined, otherwise how many are in.
+function rosterLine() {
+  const { one, two } = state.roster;
+  if (one?.joined && two?.joined) return `${one.name} vs ${two.name}`;
+  const joined = [one, two].filter((c) => c?.joined).length;
+  return `Waiting for contestants (${joined}/2 joined)`;
+}
+
+// How far chat swung towards the winner's side.
+function swayLine() {
+  const r = state.results;
+  if (!r || state.winner === 'draw') return state.winner === 'draw' ? 'Chat did not move either way' : '';
+  const isA = state.winner === 'A';
+  const sway = isA ? r.swayA : r.swayB;
+  const before = isA ? r.openingA : r.openingB;
+  const after = isA ? r.closingA : r.closingB;
+  return `Chat swung ${Math.round(Math.abs(sway) * 10) / 10} points: ${Math.round(before * 10) / 10}% to ${Math.round(after * 10) / 10}%`;
+}
+
 function renderTimer() {
   const el = $('overlay-timer-display');
   if (el) el.textContent = formatClock(remainingMs(state.timer, state.serverOffsetMs));
@@ -68,7 +87,12 @@ function render() {
   if (state.topic) {
     const promptEl = $('overlay-topic-prompt');
     if (promptEl) promptEl.textContent = state.topic.prompt;
+    const explainerEl = $('overlay-topic-explainer');
+    if (explainerEl) explainerEl.textContent = state.topic.explainer ?? '';
   }
+
+  const rosterEl = $('overlay-roster');
+  if (rosterEl) rosterEl.textContent = rosterLine();
 
   if (state.contestants.A) {
     $('overlay-side-a') && ($('overlay-side-a').textContent = state.topic?.sideA ?? '—');
@@ -88,6 +112,10 @@ function render() {
       const name = state.contestants[state.winner]?.displayName;
       winnerEl.textContent = state.winner === 'draw' ? 'Draw' : name ?? '—';
     }
+    const labelEl = $('overlay-results-label');
+    if (labelEl) labelEl.textContent = state.winner === 'draw' ? 'Result' : 'Winner';
+    const swayEl = $('overlay-sway');
+    if (swayEl) swayEl.textContent = swayLine();
   }
 
   setConnectionPill(state.connectionStatus);

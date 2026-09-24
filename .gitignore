@@ -3,3 +3,5 @@ Thumbs.db
 *.log
 .vscode/
 node_modules/
+e2e/shots/
+e2e/package-lock.json

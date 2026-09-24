@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Host Panel — Devil's Advocate</title>
   <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./css/crypt.css">
   <link rel="stylesheet" href="./css/game.css">
 </head>
@@ -19,115 +20,85 @@
     </div>
   </nav>
 
-  <main class="game-main">
-    <h1>Host Control Panel</h1>
-    <p class="badge badge-accent" style="margin-top: 0.5rem;">Private surface — not for stream display</p>
+  <main class="game-main host-main">
 
-    <div class="divider">Session</div>
-    <div class="card fade-up">
-      <div class="control-group">
-        <button class="btn btn-gold" id="btn-create-session">Create Session</button>
-        <button class="btn btn-ghost" id="btn-resume-session">Resume Session</button>
-        <button class="btn btn-ghost" id="btn-archive-session">Archive Session</button>
+    <header class="host-head">
+      <div>
+        <h1>Host</h1>
+        <p class="session-line" id="session-line">No session running</p>
       </div>
-      <div class="control-group">
+      <div class="host-status">
         <span class="status-pill" data-status="offline" id="connection-pill">Offline</span>
-        <span class="phase-pill" id="phase-pill">Phase: LOBBY</span>
+        <span class="phase-pill" id="phase-pill">No round</span>
       </div>
-    </div>
+    </header>
 
-    <div class="divider">Contestants</div>
-    <div class="card fade-up-1">
-      <div class="stance-grid">
-        <div>
-          <label class="field-label" for="input-contestant-a">Seat One</label>
-          <input class="crypt-input" id="input-contestant-a" placeholder="Display name">
-        </div>
-        <div>
-          <label class="field-label" for="input-contestant-b">Seat Two</label>
-          <input class="crypt-input" id="input-contestant-b" placeholder="Display name">
-        </div>
-      </div>
-      <div class="control-group">
-        <button class="btn btn-ghost" id="btn-save-contestants">Save Contestants</button>
-      </div>
-    </div>
+    <ol class="stepper" id="stepper" aria-label="Show progress"></ol>
 
-    <div class="divider">Topic &amp; Sides</div>
-    <div class="card fade-up-2">
-      <div class="control-group">
-        <button class="btn btn-gold" id="btn-draw-topic">Draw Topic</button>
-        <button class="btn btn-gold" id="btn-assign-sides">Assign Sides</button>
-        <button class="btn btn-accent" id="btn-reveal">Reveal</button>
-      </div>
-    </div>
+    <!-- The one thing to do right now. -->
+    <section class="card card-gold now-card" id="now-card">
+      <div class="now-eyebrow" id="now-step"></div>
+      <h2 id="now-title">Start a session</h2>
+      <p id="now-blurb"></p>
+      <p class="now-audience" id="now-audience" hidden></p>
 
-    <div class="divider">Phase &amp; Timer</div>
-    <div class="card fade-up-3">
-      <div class="control-group">
-        <button class="btn btn-ghost" id="btn-phase-back">◂ Previous Phase</button>
-        <button class="btn btn-gold" id="btn-phase-advance">Advance Phase ▸</button>
-      </div>
-      <div class="control-group">
-        <div>
-          <label class="field-label" for="input-timer-minutes">Minutes</label>
-          <input class="crypt-input" id="input-timer-minutes" type="number" min="1" value="15" style="max-width: 100px;">
-        </div>
-        <button class="btn btn-ghost" id="btn-timer-start">Start / Resume Timer</button>
-        <button class="btn btn-ghost" id="btn-timer-pause">Pause Timer</button>
-      </div>
-      <div class="timer-display" id="timer-display">--:--</div>
-    </div>
+      <div class="invite-list" id="now-invites" hidden></div>
 
-    <div class="divider">Polls</div>
-    <div class="card fade-up-4">
-      <div class="stance-grid">
-        <div>
-          <label class="field-label" for="input-opening-a">Opening — Side A %</label>
-          <input class="crypt-input" id="input-opening-a" type="number" min="0" max="100">
-        </div>
-        <div>
-          <label class="field-label" for="input-opening-b">Opening — Side B %</label>
-          <input class="crypt-input" id="input-opening-b" type="number" min="0" max="100">
-        </div>
+      <div class="now-timer" id="now-timer" hidden>
+        <div class="field-label" id="now-timer-label">Timer</div>
+        <div class="timer-display" id="timer-display">--:--</div>
+        <button class="btn btn-ghost" id="btn-timer-toggle" type="button">Start timer</button>
       </div>
-      <div class="stance-grid">
-        <div>
-          <label class="field-label" for="input-closing-a">Closing — Side A %</label>
-          <input class="crypt-input" id="input-closing-a" type="number" min="0" max="100">
-        </div>
-        <div>
-          <label class="field-label" for="input-closing-b">Closing — Side B %</label>
-          <input class="crypt-input" id="input-closing-b" type="number" min="0" max="100">
-        </div>
-      </div>
-      <div class="control-group">
-        <button class="btn btn-gold" id="btn-finalize">Finalize &amp; Reveal Winner</button>
-        <button class="btn btn-accent" id="btn-void">Void Round</button>
-        <button class="btn btn-accent" id="btn-reroll">Reroll</button>
-      </div>
-    </div>
 
-    <div class="divider">Show URLs</div>
-    <div class="card fade-up-5">
-      <div class="control-group">
-        <button class="btn btn-ghost" data-copy-url="overlay">Copy OBS Overlay URL</button>
-        <button class="btn btn-ghost" data-copy-url="watch">Copy Audience URL</button>
-        <button class="btn btn-accent" id="btn-emergency-hide">Emergency Hide Overlay</button>
-      </div>
-      <div class="control-group">
-        <button class="btn btn-ghost" id="btn-invite-one">Invite Contestant One</button>
-        <button class="btn btn-ghost" id="btn-invite-two">Invite Contestant Two</button>
-      </div>
-      <p class="badge" style="margin-top: 0.75rem;">Each invite link is single-purpose and expires — see spec section 10.</p>
-    </div>
+      <div class="now-inputs" id="now-inputs"></div>
 
-    <div class="divider">Event Log</div>
-    <div class="card">
+      <div class="now-actions">
+        <button class="btn btn-gold btn-primary" id="btn-primary" type="button">Start a session</button>
+        <p class="now-hint" id="now-hint"></p>
+        <button class="link-btn" id="btn-skip-wait" type="button" hidden>Start without waiting</button>
+      </div>
+      <p class="now-error" id="now-error" role="alert" hidden></p>
+    </section>
+
+    <!-- What the host can see that the audience can't (yet). -->
+    <section class="card" id="table-card" hidden>
+      <div class="table-head">
+        <div class="field-label">On the table</div>
+        <span class="badge" id="table-visibility"></span>
+      </div>
+      <h3 class="table-prompt" id="table-prompt"></h3>
+      <p class="table-explainer" id="table-explainer"></p>
+      <ul class="table-sides" id="table-sides"></ul>
+    </section>
+
+    <section class="card">
+      <div class="field-label">Show links</div>
+      <div class="control-group">
+        <button class="btn btn-ghost" id="btn-copy-overlay" type="button">Copy OBS overlay link</button>
+        <button class="btn btn-ghost" id="btn-copy-watch" type="button">Copy audience link</button>
+      </div>
+      <div class="invite-list" id="links-invites"></div>
+    </section>
+
+    <details class="card more">
+      <summary>More controls</summary>
+      <div class="control-group">
+        <button class="btn btn-ghost" id="btn-back" type="button">◂ Back one phase</button>
+        <button class="btn btn-ghost" id="btn-hide" type="button">Emergency hide overlay</button>
+      </div>
+      <div class="control-group">
+        <button class="btn btn-accent" id="btn-void" type="button">Void this round</button>
+        <button class="btn btn-accent" id="btn-reroll" type="button">Clear poll results</button>
+        <button class="btn btn-ghost" id="btn-forget" type="button">Forget this session on this browser</button>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary>Event log</summary>
       <ul class="event-log" id="event-log">
-        <li>No events yet.</li>
+        <li>Nothing yet.</li>
       </ul>
-    </div>
+    </details>
   </main>
 
   <script type="module" src="./js/host.js"></script>

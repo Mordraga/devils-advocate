@@ -17,13 +17,18 @@ export const PHASES = [
 export const state = {
   connectionStatus: 'offline', // 'offline' | 'connecting' | 'online' | 'stale'
   sessionCode: null,
+  roundId: null,
   version: 0,
   serverOffsetMs: 0, // server clock minus this browser's clock (see timer.js)
   phase: 'LOBBY',
   topic: null, // { prompt, sideA, sideB, category, tags }
   contestants: {
-    A: null, // { displayName, pronouns, avatarUrl, accentColor }
+    A: null, // { id, displayName, pronouns, avatarUrl, accentColor } - debate sides, hidden until REVEAL
     B: null,
+  },
+  roster: {
+    one: null, // { name, joined } - who holds each seat (visible in the lobby)
+    two: null,
   },
   timer: {
     startedAt: null,
@@ -35,7 +40,8 @@ export const state = {
     opening: null, // { a, b }
     closing: null, // { a, b }
   },
-  winner: null, // 'A' | 'B' | 'draw' | null
+  winner: null, // 'A' | 'B' | 'draw' | null - only set from RESULTS onward
+  results: null, // { openingA, openingB, closingA, closingB, swayA, swayB } - same
   hidden: false, // host's emergency-hide toggle (overlay.visibility_changed)
 };
 

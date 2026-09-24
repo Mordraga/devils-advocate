@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contestant Room — Devil's Advocate</title>
   <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./css/crypt.css">
   <link rel="stylesheet" href="./css/game.css">
 </head>
@@ -17,29 +18,70 @@
     </div>
   </nav>
 
-  <main class="game-main">
-    <div class="card card-gold fade-up">
-      <div class="field-label">You are</div>
-      <h1 id="contestant-name">—</h1>
-      <div class="field-label" style="margin-top: 1rem;">Assigned stance</div>
-      <h2 id="contestant-stance">Waiting for reveal…</h2>
-    </div>
+  <main class="game-main play-main">
 
-    <div class="divider">Topic</div>
-    <div class="card fade-up-1">
-      <p id="topic-prompt">The topic hasn't been drawn yet.</p>
-    </div>
+    <section class="card card-gold" id="invite-error" hidden>
+      <h2>This invite doesn't work</h2>
+      <p id="invite-error-text"></p>
+    </section>
 
-    <div class="divider">Phase &amp; Timer</div>
-    <div class="card fade-up-2">
-      <span class="phase-pill" id="phase-pill">Phase: LOBBY</span>
-      <div class="timer-display" id="timer-display">--:--</div>
-    </div>
+    <!-- First visit: pick the name everyone will see. -->
+    <section class="card card-gold" id="join-card" hidden>
+      <h2 id="join-title">Join the debate</h2>
+      <p id="join-blurb">Pick the name the host, chat and your opponent will see.</p>
+      <form class="name-form" id="join-form">
+        <label class="field-label" for="join-name">Your display name</label>
+        <input class="crypt-input" id="join-name" maxlength="40" autocomplete="nickname" required>
+        <button class="btn btn-gold" id="join-submit" type="submit">Join</button>
+        <p class="now-error" id="join-error" role="alert" hidden></p>
+      </form>
+    </section>
 
-    <div class="divider">Private Notes</div>
-    <div class="card fade-up-3">
-      <p class="badge" style="margin-bottom: 0.75rem;">Stored only in this browser — never sent anywhere</p>
-      <textarea class="crypt-input" id="private-notes" rows="6" placeholder="Scratch notes for your argument…"></textarea>
+    <div id="room" hidden>
+      <ol class="stepper" id="stepper" aria-label="Where the show is up to"></ol>
+
+      <section class="card banner" id="banner" data-tone="wait">
+        <h2 id="banner-headline">You're in</h2>
+        <p id="banner-body"></p>
+        <p class="timer-note" id="who-line"></p>
+        <button class="link-btn" id="btn-change-name" type="button">Not right? Change your name</button>
+      </section>
+
+      <section class="card" id="timer-card" hidden>
+        <div class="field-label" id="timer-label">Time left</div>
+        <div class="timer-display" id="timer-display">--:--</div>
+        <p class="timer-note" id="timer-note" hidden></p>
+      </section>
+
+      <section class="card" id="topic-card" hidden>
+        <div class="field-label">The question</div>
+        <h2 class="topic-question" id="topic-prompt"></h2>
+        <p class="topic-explainer" id="topic-explainer"></p>
+      </section>
+
+      <section class="stance-grid" id="side-grid" hidden>
+        <div class="stance-card card mine">
+          <div class="stance-side">You argue</div>
+          <div class="stance-position" id="my-position">—</div>
+          <div class="who" id="my-name">—</div>
+        </div>
+        <div class="stance-card card">
+          <div class="stance-side">Your opponent argues</div>
+          <div class="stance-position" id="their-position">—</div>
+          <div class="who" id="their-name">—</div>
+        </div>
+      </section>
+
+      <section class="card" id="results-card" hidden>
+        <div class="field-label">The final swing</div>
+        <ul class="table-sides" id="results-lines"></ul>
+      </section>
+
+      <section class="card" id="notes-card">
+        <div class="field-label">Your notes for this round</div>
+        <p class="notes-hint" id="notes-hint">Only you can see these. They stay in this browser and start fresh each round.</p>
+        <textarea class="crypt-input" id="private-notes" rows="6" placeholder="Arguments, examples, comebacks…"></textarea>
+      </section>
     </div>
   </main>
 
