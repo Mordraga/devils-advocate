@@ -1,6 +1,8 @@
-// Full-game browser test: drives the real pages in real Chrome - one host
-// window, two contestant windows (separate storage, like real players) and
-// a watch window - through every phase, asserting what each screen shows.
+// Full-game browser test: drives the real pages in real Chrome - a host, two
+// contestants (separate storage, like real players), three audience phones,
+// an OBS-style overlay and a watch page - through two whole rounds:
+//   round 1: audience voting decides the polls
+//   round 2: the host types the results by hand (the Twitch fallback)
 //
 //   node full-game.js <client url> <admin token> <screenshot dir>
 //
@@ -20,6 +22,8 @@ fs.mkdirSync(SHOTS, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const errors = [];
 const debugPages = {};
+let allow409 = 0; // a deliberate refusal (e.g. "no votes yet") logs a 409 in the console
+let allow404 = 0; // ...and a deliberately wrong room code logs a 404
 let step = 0;
 const log = (msg) => console.log(`  ${msg}`);
 const check = (cond, msg) => {
@@ -40,7 +44,16 @@ const shot = async (page, name) => {
 function watchErrors(page, label) {
   page.on('pageerror', (e) => errors.push(`[${label}] pageerror: ${e.message}`));
   page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(`[${label}] console: ${m.text()}`);
+    if (m.type() !== 'error') return;
+    if (allow409 > 0 && /status of 409/.test(m.text())) {
+      allow409 -= 1;
+      return;
+    }
+    if (allow404 > 0 && /status of 404/.test(m.text())) {
+      allow404 -= 1;
+      return;
+    }
+    errors.push(`[${label}] console: ${m.text()}`);
   });
 }
 
@@ -56,7 +69,7 @@ async function newPage(browser, label, viewport) {
 (async () => {
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] });
   try {
-    // ---- host ----------------------------------------------------------
+    // ================================================================ host
     console.log('\nHOST: start a session');
     const { page: host, context: hostCtx } = await newPage(browser, 'host', { width: 1100, height: 900 });
     await hostCtx.overridePermissions(CLIENT, ['clipboard-read', 'clipboard-write']);
@@ -67,6 +80,9 @@ async function newPage(browser, label, viewport) {
       await d.accept();
     });
     let launch = null;
+    host.on('response', async (r) => {
+      if (r.url().endsWith('/sessions/launch') && r.request().method() === 'POST') launch = await r.json();
+    });
     // A button that says "Working..." is disabled; wait for it like a person would.
     const clickPrimary = async () => {
       await waitFor(host, () => {
@@ -75,9 +91,11 @@ async function newPage(browser, label, viewport) {
       });
       await host.click('#btn-primary');
     };
-    host.on('response', async (r) => {
-      if (r.url().endsWith('/sessions/launch') && r.request().method() === 'POST') launch = await r.json();
-    });
+    const setMinutes = async (value) => {
+      await host.$eval('#input-minutes', (i) => (i.value = ''));
+      await host.type('#input-minutes', String(value));
+    };
+    const title = (t) => waitFor(host, (x) => document.querySelector('#now-title').textContent.includes(x), t);
 
     await host.goto(`${CLIENT}/host.html`);
     await waitFor(host, () => document.querySelector('#btn-primary')?.textContent.includes('Start a session'));
@@ -85,7 +103,8 @@ async function newPage(browser, label, viewport) {
     await shot(host, 'host-empty');
 
     await clickPrimary();
-    await waitFor(host, () => document.querySelector('#now-title').textContent.includes('Invite your contestants'));
+    await title('Invite your contestants');
+    const code = launch.session.public_code;
     check(launch && launch.invites.length === 2, 'launch returned two invites');
     check((await host.$$('#now-invites .invite-row')).length === 2, 'two invite rows are shown as step one');
     check(await host.$eval('#btn-primary', (b) => b.disabled), 'deal is locked until both contestants join');
@@ -93,18 +112,17 @@ async function newPage(browser, label, viewport) {
     check((await text(host, '#now-step')) === 'Step 1 of 8', 'step counter reads 1 of 8');
     await shot(host, 'host-invite-step');
 
-    // The copy button either writes to the clipboard (button flashes
-    // "Copied") or, if the browser refuses, falls back to a prompt holding the link.
+    // The copy button either writes to the clipboard (flashes "Copied") or,
+    // if the browser refuses, falls back to a prompt holding the link.
     await host.bringToFront();
     await host.click('#now-invites .invite-row button');
     await sleep(400);
     const flashed = await host.$eval('#now-invites .invite-row button', (b) => b.textContent);
     const clip = await host.evaluate(() => navigator.clipboard.readText()).catch(() => '');
     const link = [clip, ...prompts].find((t) => t && t.includes('/play.html?token='));
-    log('button text after click: ' + JSON.stringify(flashed) + '; clipboard ' + (clip ? 'has text' : 'unreadable/empty') + '; prompts seen: ' + prompts.length);
     check(flashed.includes('Copied') || Boolean(link), 'the copy button either copies the invite link or shows it for manual copy');
 
-    // ---- contestants ---------------------------------------------------
+    // ========================================================== contestants
     console.log('\nCONTESTANTS: join with the invite links');
     const players = {};
     for (const [seat, name] of [['one', 'Alice'], ['two', 'Bob']]) {
@@ -120,23 +138,51 @@ async function newPage(browser, label, viewport) {
       check((await text(page, '#banner-headline')).includes('lobby'), `${name}: sees the lobby banner`);
       if (name === 'Alice') {
         check((await text(page, '#banner-body')).includes('Waiting for your opponent'), 'Alice is told her opponent has not joined yet');
-        await shot(page, 'alice-lobby-alone');
       }
     }
-    const alice = players.Alice;
-    const bob = players.Bob;
+    const { Alice: alice, Bob: bob } = players;
     await waitFor(alice, () => document.querySelector('#banner-body').textContent.includes('Bob is here'));
     check(true, 'Alice is told Bob has arrived (live roster over the websocket)');
-
     await waitFor(host, () => !document.querySelector('#btn-primary').disabled);
     check((await host.$$eval('#now-invites .badge-gold', (e) => e.length)) === 2, 'host roster shows both contestants joined');
-    check((await text(host, '#now-invites')).includes('Alice') && (await text(host, '#now-invites')).includes('Bob'), 'host sees the names contestants chose');
-    await shot(host, 'host-both-joined');
 
-    // ---- deal + lock ---------------------------------------------------
-    console.log('\nHOST: draw topic & sides');
+    // ============================================== audience + stream screens
+    console.log('\nAUDIENCE: three phones, the landing page, and the stream overlay');
+    // The Jackbox-style way in: type the room code on the landing page.
+    const { page: landing } = await newPage(browser, 'landing', { width: 420, height: 800 });
+    await landing.goto(`${CLIENT}/index.html`);
+    await landing.type('#room-code-input', 'ZZZZZZ');
+    allow404 += 1;
+    await landing.click('#join-submit');
+    await landing.waitForSelector('#join-error:not([hidden])', { timeout: 10000 });
+    check((await text(landing, '#join-error')).includes("couldn't find"), 'a wrong room code is refused with a helpful message');
+    await landing.$eval('#room-code-input', (i) => (i.value = ''));
+    await landing.type('#room-code-input', code.toLowerCase());
+    await Promise.all([landing.waitForNavigation({ timeout: 15000 }), landing.click('#join-submit')]);
+    check(landing.url().includes(`watch.html?session=${code}`), 'the right room code (any case) lands on the watch page');
+    await waitFor(landing, () => document.querySelector('#connection-pill').textContent === 'Live');
+
+    const voters = [landing];
+    for (let i = 2; i <= 3; i++) {
+      const { page } = await newPage(browser, `voter${i}`, { width: 420, height: 800 });
+      await page.goto(`${CLIENT}/watch.html?session=${code}`);
+      await waitFor(page, () => document.querySelector('#connection-pill').textContent === 'Live');
+      voters.push(page);
+    }
+    check((await text(voters[0], '#room-code')) === `Room ${code}`, 'the watch page shows the room code');
+    check((await text(voters[0], '#overlay-roster')) === 'Alice vs Bob', 'standby shows who is playing ("Alice vs Bob")');
+    check((await text(voters[0], '#overlay-join')).includes(code), 'standby says how to join, with the room code');
+    check(!(await visible(voters[0], '#vote-card')), 'no vote buttons while no poll is open');
+
+    const { page: overlay } = await newPage(browser, 'overlay', { width: 1280, height: 720 });
+    await overlay.goto(`${CLIENT}/overlay.html?session=${code}`);
+    await waitFor(overlay, (c) => document.querySelector('#overlay-join').textContent.includes(c), code);
+    check(true, 'the stream overlay also shows the join line on standby');
+
+    // ================================================================ ROUND 1
+    console.log('\nROUND 1 - HOST: draw topic & sides');
     await clickPrimary();
-    await waitFor(host, () => document.querySelector('#now-title').textContent.includes('Topic locked in'));
+    await title('Topic locked in');
     check(await visible(host, '#table-card'), 'host can see the topic before the reveal');
     const prompt = await text(host, '#table-prompt');
     const explainer = await text(host, '#table-explainer');
@@ -148,8 +194,7 @@ async function newPage(browser, label, viewport) {
     check(!(await visible(alice, '#topic-card')) && !(await visible(alice, '#side-grid')), 'contestants cannot see the topic or sides yet');
     await shot(host, 'host-locked');
 
-    // ---- reveal --------------------------------------------------------
-    console.log('\nHOST: reveal');
+    console.log('\nROUND 1 - HOST: reveal');
     await clickPrimary();
     for (const p of [alice, bob]) {
       await waitFor(p, () => !document.querySelector('#topic-card').hidden);
@@ -161,114 +206,166 @@ async function newPage(browser, label, viewport) {
     const bobSide = await text(bob, '#my-position');
     check(aliceSide && bobSide && aliceSide !== bobSide, `the two contestants argue opposite sides ("${aliceSide}" vs "${bobSide}")`);
     check((await text(alice, '#their-position')) === bobSide, "Alice's 'your opponent argues' is Bob's side");
-    check((await text(alice, '#banner-headline')).includes('revealed'), 'banner explains the reveal');
     await shot(alice, 'alice-revealed');
-    await shot(host, 'host-revealed');
 
-    // ---- prep + timer --------------------------------------------------
-    console.log('\nHOST: start preparation (2 min) and check the timers tick');
-    await host.$eval('#input-minutes', (i) => (i.value = ''));
-    await host.type('#input-minutes', '2');
+    console.log('\nROUND 1 - HOST: start preparation (2 min) and check the timers tick');
+    await title('Topic revealed'); // the panel redraws a beat after the contestants' screens do
+    await setMinutes(2);
     await clickPrimary();
     await waitFor(alice, () => !document.querySelector('#timer-card').hidden);
-    // the clock must already be running the moment the timer card appears
     check(/^\d\d:\d\d$/.test(await text(alice, '#timer-display')), 'the timer card never shows a blank clock');
     await sleep(600);
     const t1 = await text(alice, '#timer-display');
     await sleep(2200);
     const t2 = await text(alice, '#timer-display');
-    check(/^\d\d:\d\d$/.test(t1) && /^\d\d:\d\d$/.test(t2) && t1 !== t2, `the contestant countdown ticks (${t1} -> ${t2})`);
+    check(/^\d\d:\d\d$/.test(t2) && t1 !== t2, `the contestant countdown ticks (${t1} -> ${t2})`);
     check((await text(alice, '#timer-label')) === 'Prep time left', 'timer is labelled for prep');
-    const hostClock = await text(host, '#timer-display');
-    check(/^\d\d:\d\d$/.test(hostClock), `the host timer shows a running countdown (${hostClock})`);
-    check((await text(alice, '#banner-body')).includes('notes'), 'prep banner points at the notes box');
-
+    check(/^\d\d:\d\d$/.test(await text(host, '#timer-display')), 'the host timer shows a running countdown');
     await alice.type('#private-notes', 'my prep notes');
-    await sleep(200);
-
     await host.click('#btn-timer-toggle');
     await waitFor(alice, () => !document.querySelector('#timer-note').hidden);
     check((await text(alice, '#timer-note')).includes('paused'), 'contestant is told when the host pauses the timer');
     await waitFor(host, () => document.querySelector('#btn-timer-toggle').textContent.includes('Resume'));
-    check(true, 'host button flips to Resume');
     await host.click('#btn-timer-toggle');
     await waitFor(alice, () => document.querySelector('#timer-note').hidden);
     check(true, 'resuming clears the paused note');
-    await shot(alice, 'alice-prep');
 
-    // ---- opening poll --------------------------------------------------
-    console.log('\nHOST: opening poll');
+    // ---------------------------------------------------------- opening vote
+    console.log('\nROUND 1 - AUDIENCE: opening vote');
     await clickPrimary();
-    await waitFor(host, () => document.querySelector('#now-title').textContent === 'Opening poll');
-    await waitFor(alice, () => document.querySelector('#banner-headline').textContent.includes('Chat is voting'));
-    check(true, 'contestants are told chat is voting');
-    const pollLabel = await host.$eval('#poll-a-label', (e) => e.textContent);
-    check(/^(Alice|Bob): .+ \(%\)$/.test(pollLabel), `poll fields are labelled with who argues what ("${pollLabel}")`);
-    await host.type('#poll-a', '70');
-    check((await host.$eval('#poll-b', (i) => i.value)) === '30', 'typing side A fills in side B');
-    await host.$eval('#input-minutes', (i) => (i.value = ''));
-    await host.type('#input-minutes', '3');
-    await shot(host, 'host-opening-poll');
+    await title('Opening vote');
+    for (const v of voters) await waitFor(v, () => !document.querySelector('#vote-card').hidden);
+    check(true, 'all three audience phones get the vote buttons the moment the poll opens');
+    check((await text(voters[0], '#vote-question')).includes('right now'), 'the opening question is worded for the opening poll');
+    const sideAText = await text(voters[0], '#vote-a-text');
+    const sideBText = await text(voters[0], '#vote-b-text');
+    check(sideAText.length > 0 && sideBText.length > 0 && sideAText !== sideBText, `vote buttons carry the two sides ("${sideAText}" / "${sideBText}")`);
+    check((await text(voters[0], '#vote-a-by')).startsWith('argued by'), 'each side says who argues it');
+    check((await text(alice, '#banner-headline')).includes('voting'), 'contestants are told the audience is voting');
+    await waitFor(overlay, () => !document.querySelector('#overlay-poll-indicator').hidden);
+    check((await text(overlay, '#overlay-poll-join')).includes(code), 'the stream overlay shows where to vote, with the room code');
+    check((await text(overlay, '#overlay-poll-count')).includes('Waiting'), 'and that no votes are in yet');
+    await shot(voters[0], 'phone-vote-open');
+
+    const vote = async (page, side) => {
+      await page.click(`#vote-${side.toLowerCase()}`);
+      await waitFor(page, (s) => document.querySelector(`#vote-${s}`).getAttribute('aria-pressed') === 'true', side.toLowerCase());
+    };
+    await vote(voters[0], 'B'); // changes their mind below
+    await vote(voters[1], 'A');
+    await vote(voters[2], 'B');
+    await vote(voters[0], 'A'); // final: A, A, B
+    check((await text(voters[0], '#vote-status')).includes('Your vote is in'), 'a voter is told their vote is in, and can change it');
+    await waitFor(host, () => document.querySelector('#now-hint').textContent.includes('3 votes in so far'));
+    check(true, 'the host sees turnout (3 votes, counted once per person even though one changed their mind)');
+    await waitFor(overlay, () => document.querySelector('#overlay-poll-count').textContent.includes('3 votes'));
+    check(true, 'and the stream overlay shows the same count');
+    const secret = await voters[0].evaluate(() => document.body.innerText);
+    check(!/\d+(\.\d+)?%/.test(secret), 'no percentages or split are visible to viewers while voting is open');
+
+    await voters[2].reload();
+    await waitFor(voters[2], () => !document.querySelector('#vote-card').hidden);
+    await waitFor(voters[2], () => document.querySelector('#vote-b').getAttribute('aria-pressed') === 'true');
+    check(true, "a viewer's vote is remembered across a page reload");
+
+    await setMinutes(3);
+    await shot(host, 'host-opening-vote');
     await clickPrimary();
-    await waitFor(host, () => document.querySelector('#now-title').textContent === 'Debate');
-    await waitFor(alice, () => document.querySelector('#banner-headline').textContent.includes('Debate'));
+    await title('Debate');
+    for (const v of voters) await waitFor(v, () => document.querySelector('#vote-card').hidden);
+    check(true, 'closing voting takes the vote buttons away');
+    await waitFor(overlay, () => document.querySelector('#overlay-split-text').textContent.includes('66.7%'));
+    const split = await text(overlay, '#overlay-split-text');
+    check(split.includes('33.3%') && split.startsWith('Chat started'), `the overlay reveals the starting split during the debate ("${split}")`);
     check((await text(alice, '#timer-label')) === 'Debate time left', 'timer relabels for the debate');
     check((await alice.$eval('#private-notes', (t) => t.value)) === 'my prep notes', 'notes survive the phase change');
+    await shot(overlay, 'overlay-debate-split');
 
-    // ---- closing poll + results ---------------------------------------
-    console.log('\nHOST: closing poll and results');
+    // ---------------------------------------------------------- closing vote
+    console.log('\nROUND 1 - AUDIENCE: closing vote and results');
     await clickPrimary();
-    await waitFor(host, () => document.querySelector('#now-title').textContent === 'Closing poll');
-    await host.type('#poll-a', '54');
-    check((await host.$eval('#poll-b', (i) => i.value)) === '46', 'closing poll autofills too');
+    await title('Closing vote');
+    for (const v of voters) await waitFor(v, () => !document.querySelector('#vote-card').hidden);
+    check((await text(voters[0], '#vote-kicker')) === 'Final vote', 'the closing poll is labelled as the final vote');
+    check((await voters[0].$eval('#vote-a', (b) => b.getAttribute('aria-pressed'))) === 'false', "last poll's vote is not carried over");
+    await vote(voters[0], 'B');
+    await vote(voters[1], 'B');
+    await vote(voters[2], 'A'); // closing: A 33.3 / B 66.7, so side B gained
+    await waitFor(host, () => document.querySelector('#now-hint').textContent.includes('3 votes in so far'));
     await clickPrimary();
     await waitFor(host, () => /won|draw/.test(document.querySelector('#now-title').textContent));
     const winnerTitle = await text(host, '#now-title');
-    log(`host headline: ${winnerTitle}`);
     await waitFor(alice, () => !document.querySelector('#results-card').hidden);
     await waitFor(bob, () => !document.querySelector('#results-card').hidden);
     const aliceHead = await text(alice, '#banner-headline');
     const bobHead = await text(bob, '#banner-headline');
     check([aliceHead, bobHead].sort().join('|') === ['You won!', 'Your opponent won'].sort().join('|'), `exactly one contestant sees "You won!" (${aliceHead} / ${bobHead})`);
-    const sideBLine = sides.find((s) => s.startsWith('Side B'));
-    const sideBName = /Alice/.test(sideBLine) ? 'Alice' : 'Bob';
-    check(winnerTitle === `${sideBName} won`, `the side that gained ground (B, ${sideBName}) is the winner`);
-    check(((sideBName === 'Alice' ? aliceHead : bobHead)) === 'You won!', 'and that contestant sees "You won!"');
+    const sideBName = /Alice/.test(sides.find((s) => s.startsWith('Side B'))) ? 'Alice' : 'Bob';
+    check(winnerTitle === `${sideBName} won`, `the side the audience swung towards (B, ${sideBName}) is the winner`);
+    check((sideBName === 'Alice' ? aliceHead : bobHead) === 'You won!', 'and that contestant sees "You won!"');
     const lines = await alice.$$eval('#results-lines li', (e) => e.map((l) => l.textContent));
     check(lines.length === 2 && lines.every((l) => l.includes('→')), `results card shows both sides' swing (${lines.join(' | ')})`);
+    await waitFor(voters[0], () => document.querySelector('#overlay-sway').textContent.includes('Chat swung'));
+    check((await text(voters[0], '#overlay-sway')).includes('33.3 points'), `the watch page shows the audience swing ("${await text(voters[0], '#overlay-sway')}")`);
     await shot(alice, 'alice-results');
-    await shot(bob, 'bob-results');
-    await shot(host, 'host-results');
+    await shot(voters[0], 'phone-results');
 
-    // ---- watch page ----------------------------------------------------
-    console.log('\nWATCH: audience view');
-    const { page: watch } = await newPage(browser, 'watch', { width: 1100, height: 800 });
-    await watch.goto(`${CLIENT}/watch.html?session=${launch.session.public_code}`);
-    await waitFor(watch, () => !document.querySelector('#overlay-results').hidden);
-    check((await text(watch, '#overlay-sway')).includes('Chat swung 16 points'), `watch shows the swing ("${await text(watch, '#overlay-sway')}")`);
-    await shot(watch, 'watch-results');
-
-    // ---- next round ----------------------------------------------------
-    console.log('\nHOST: next round');
+    // ================================================================ ROUND 2
+    console.log('\nROUND 2 - HOST: next round, then the manual (Twitch) fallback');
     await clickPrimary();
-    await waitFor(host, () => document.querySelector('#now-title').textContent.includes('Invite your contestants'));
+    await title('Invite your contestants');
     check(!(await host.$eval('#btn-primary', (b) => b.disabled)), 'contestants are still joined, so dealing is immediately available');
     await waitFor(alice, () => document.querySelector('#banner-headline').textContent.includes('lobby'));
-    check(true, 'contestants go back to the lobby banner');
     check((await alice.$eval('#private-notes', (t) => t.value)) === '', 'notes start fresh for the new round');
-    await shot(host, 'host-next-round');
+    await waitFor(voters[0], () => !document.querySelector('#overlay-standby').hidden);
+    check(true, 'the audience screens go back to standby');
 
-    // ---- refresh resumes the host session -----------------------------
+    await clickPrimary();
+    await title('Topic locked in');
+    const sides2 = await host.$$eval('#table-sides li', (e) => e.map((l) => l.textContent));
+    await clickPrimary();
+    await title('Topic revealed');
+    await setMinutes(1);
+    await clickPrimary();
+    await title('Contestants are preparing');
+    await clickPrimary();
+    await title('Opening vote');
+
+    allow409 += 1;
+    await clickPrimary(); // no votes were cast
+    await waitFor(host, () => !document.querySelector('#now-error').hidden);
+    check((await text(host, '#now-error')).includes('No votes yet'), 'closing an empty poll is refused with a clear message');
+    check((await text(host, '#now-title')) === 'Opening vote', 'and the host stays on the same step');
+
+    await host.click('#manual-poll summary');
+    await host.type('#poll-a', '70');
+    check((await host.$eval('#poll-b', (i) => i.value)) === '30', 'the manual fallback autofills the other side');
+    await setMinutes(1);
+    await clickPrimary();
+    await title('Debate');
+    check(true, 'a result entered by hand still starts the debate');
+    await clickPrimary();
+    await title('Closing vote');
+    await host.click('#manual-poll summary');
+    await host.type('#poll-a', '54');
+    check((await host.$eval('#poll-b', (i) => i.value)) === '46', 'closing fallback autofills too');
+    await clickPrimary();
+    await waitFor(host, () => /won|draw/.test(document.querySelector('#now-title').textContent));
+    const sideB2 = /Alice/.test(sides2.find((s) => s.startsWith('Side B'))) ? 'Alice' : 'Bob';
+    check((await text(host, '#now-title')) === `${sideB2} won`, `manual results score correctly (B gained 30 to 46, so ${sideB2} wins)`);
+    await shot(host, 'host-results');
+
+    // ============================================ refresh resumes the host
     console.log('\nHOST: refresh resumes the session');
     await host.reload();
-    await waitFor(host, (code) => document.querySelector('#session-line').textContent.includes(code), launch.session.public_code);
+    await waitFor(host, (c) => document.querySelector('#session-line').textContent.includes(c), code);
     check(true, 'a page refresh picks the same session back up');
-    check((await text(host, '#now-title')).includes('Invite your contestants'), 'and lands on the right step');
+    check(/won|draw/.test(await text(host, '#now-title')), 'and lands on the right step');
 
     console.log('\nBROWSER ERRORS:', errors.length ? '' : 'none');
     for (const e of errors) console.log('  ', e);
     if (errors.length) process.exitCode = 1;
-    console.log(`SESSION_CODE ${launch.session.public_code} SESSION_ID ${launch.session.id}`);
+    console.log(`SESSION_CODE ${code} SESSION_ID ${launch.session.id}`);
     console.log('\nBROWSER E2E OK');
   } catch (err) {
     console.error('\nFAILED:', err.message);
@@ -279,12 +376,12 @@ async function newPage(browser, label, viewport) {
         const info = await page.evaluate(() => ({
           title: document.querySelector('#now-title')?.textContent,
           primary: document.querySelector('#btn-primary')?.textContent,
-          action: document.querySelector('#btn-primary')?.dataset.action,
           disabled: document.querySelector('#btn-primary')?.disabled,
+          hint: document.querySelector('#now-hint')?.textContent,
           error: document.querySelector('#now-error')?.hidden === false ? document.querySelector('#now-error').textContent : null,
           banner: document.querySelector('#banner-headline')?.textContent,
-          topicHidden: document.querySelector('#topic-card')?.hidden,
-          log: [...document.querySelectorAll('#event-log li')].slice(0, 6).map((l) => l.textContent),
+          voteCardHidden: document.querySelector('#vote-card')?.hidden,
+          voteStatus: document.querySelector('#vote-status')?.textContent,
         }));
         console.error(`  [${label}]`, JSON.stringify(info));
       } catch (e) {

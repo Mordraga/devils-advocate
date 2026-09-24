@@ -60,11 +60,21 @@ The full loop works end to end in a real browser (see Tests below).
   explainer line, their own stance and their opponent's, a live countdown,
   per-round notes (private, kept in their browser), and at the end the winner
   and the swing.
-- **Overlay / watch** show the question and explainer, "Alice vs Bob" on
-  standby, and the winner with the swing.
+- **Watch** (`watch.html`) is where the audience votes: enter the room code on
+  the landing page (`index.html`), and two big buttons appear on your phone
+  while a poll is open. One vote per browser per poll, changeable until the
+  host closes voting. Only a turnout count is shown while voting is open; the
+  split is revealed afterwards.
+- **Overlay** (`overlay.html`, for OBS) shows the question and explainer,
+  "Alice vs Bob" and the room code on standby, where to vote (and how many
+  have) during a poll, the audience's starting split during the debate, and the
+  winner with the swing. The host closes voting with one click; typing a result
+  by hand (e.g. from a Twitch poll) is still available as a fallback.
 
 Modules: `state.js` (shared pub/sub), `api.js` (REST + snake_case -> camelCase),
 `socket.js` (WebSocket with version-gap resync), `config.js` (API address),
+`voter.js` (anonymous per-browser voter id), `watch.js` / `landing.js` (voting and
+room-code entry),
 `timer.js` (countdown maths), `guide.js` (host step logic) and `copy.js`
 (contestant wording) - the last three are pure and unit-tested.
 
@@ -76,7 +86,8 @@ section 6) beyond basic fade-ins.
 ```bash
 node --test "client/tests/*.test.mjs"     # pure logic: no browser needed
 
-# Full game in real Chrome (host + two contestants + watch). Needs the server
+# Two full rounds in real Chrome (host, two contestants, three audience phones,
+# overlay): audience voting, then the by-hand fallback. Needs the server
 # running (CORS_ORIGINS / CLIENT_BASE_URL set to the client url) and the
 # client served on :8080.
 cd e2e && npm install

@@ -33,6 +33,17 @@
   </section>
 
   <main class="game-main">
+    <div class="card card-gold join-card fade-up">
+      <h2>Join a show</h2>
+      <p>Got a room code from the stream? Enter it to watch along and vote on the debates.</p>
+      <form class="join-form" id="join-form">
+        <label class="field-label" for="room-code-input">Room code</label>
+        <input class="crypt-input room-input" id="room-code-input" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" required>
+        <button class="btn btn-gold" id="join-submit" type="submit">Join</button>
+      </form>
+      <p class="now-error" id="join-error" role="alert" hidden></p>
+    </div>
+
     <div class="card card-gold fade-up">
       <h2>How it works</h2>
       <p>
@@ -41,13 +52,6 @@
         votes before and after the debate. Whoever moves the crowd furthest toward
         their assigned position wins.
       </p>
-    </div>
-
-    <div class="divider">Session status</div>
-
-    <div class="card fade-up-1" id="standby-card">
-      <span class="status-pill" data-status="offline">Standby</span>
-      <p style="margin-top: 1rem;">No active session right now. Check back during a stream.</p>
     </div>
   </main>
 
@@ -64,6 +68,8 @@
     </div>
     <div class="footer-copy">The Crypt · Devil's Advocate · ©2026</div>
   </footer>
+
+  <script type="module" src="./js/landing.js"></script>
 
 </body>
 </html>

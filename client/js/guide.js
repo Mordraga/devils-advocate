@@ -11,9 +11,9 @@ export const STEPS = [
   'Locked',
   'Reveal',
   'Prep',
-  'Opening poll',
+  'Opening vote',
   'Debate',
-  'Closing poll',
+  'Closing vote',
   'Results',
 ];
 
@@ -51,6 +51,12 @@ export function pollSideLabels(host) {
 function listNames(names) {
   if (names.length <= 1) return names.join('');
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/** "37 votes in so far." - the host sees turnout, never the split. */
+export function turnoutHint(total) {
+  if (!total) return 'No votes yet.';
+  return `${total} vote${total === 1 ? '' : 's'} in so far.`;
 }
 
 export function winnerText(host) {
@@ -136,38 +142,48 @@ export function describe(host, ui = {}) {
       return {
         ...base,
         title: 'Contestants are preparing',
-        blurb: 'When the prep timer runs out, or you are ready, open the opening poll.',
+        blurb: 'When the prep timer runs out, or you are ready, open the opening vote.',
         audience: 'The sides and the prep countdown.',
         timer: true,
-        primary: { id: 'openPoll', label: 'Open the opening poll', disabled: false, hint: 'Start your Twitch poll now.' },
+        primary: { id: 'openPoll', label: 'Open the opening vote', disabled: false, hint: 'Viewers get the vote buttons straight away.' },
       };
     case 'OPENING_POLL':
       return {
         ...base,
-        title: 'Opening poll',
-        blurb: 'Run the poll on Twitch, then enter the result. This is the starting point the winner is measured from.',
-        audience: 'A "poll open - vote in chat" banner.',
+        title: 'Opening vote',
+        blurb: 'The audience is voting on the watch page. When enough people have voted, close voting and the result is recorded for you. This is the starting point the winner is measured from.',
+        audience: 'Vote buttons on the watch page; the room code and vote count on the overlay.',
         poll: 'opening',
         minutes: { key: 'debate', label: 'Debate minutes', value: DEFAULT_MINUTES.debate },
-        primary: { id: 'startDebate', label: 'Record poll & start debate', disabled: false },
+        primary: {
+          id: 'startDebate',
+          label: 'Close voting & start debate',
+          disabled: false,
+          hint: turnoutHint(host.poll?.kind === 'opening' ? host.poll.total : 0),
+        },
       };
     case 'DEBATE':
       return {
         ...base,
         title: 'Debate',
-        blurb: 'The contestants are arguing. When time is up, open the closing poll.',
+        blurb: 'The contestants are arguing. When time is up, open the closing vote.',
         audience: 'The sides and the debate countdown.',
         timer: true,
-        primary: { id: 'closePoll', label: 'Open the closing poll', disabled: false, hint: 'Start your Twitch poll now.' },
+        primary: { id: 'closePoll', label: 'Open the closing vote', disabled: false, hint: 'Viewers get the vote buttons straight away.' },
       };
     case 'CLOSING_POLL':
       return {
         ...base,
-        title: 'Closing poll',
-        blurb: 'Run the second poll and enter the result. The bigger swing towards a side wins.',
-        audience: 'A "poll open - vote in chat" banner.',
+        title: 'Closing vote',
+        blurb: 'The audience votes again. Close voting to record the result and announce who moved the crowd furthest.',
+        audience: 'Vote buttons on the watch page; the room code and vote count on the overlay.',
         poll: 'closing',
-        primary: { id: 'finish', label: 'Record poll & reveal winner', disabled: false },
+        primary: {
+          id: 'finish',
+          label: 'Close voting & reveal winner',
+          disabled: false,
+          hint: turnoutHint(host.poll?.kind === 'closing' ? host.poll.total : 0),
+        },
       };
     case 'RESULTS':
     case 'ARCHIVED':

@@ -77,7 +77,8 @@ export function describeResults({ mySide, winner, results }) {
  * @returns { step, headline, body, tone, timerLabel }
  */
 export function describePhase(ctx) {
-  const { phase, opponentName, opponentJoined } = ctx;
+  const { phase, opponentName, opponentJoined, pollTotal } = ctx;
+  const votes = pollTotal > 0 ? ` ${pollTotal} vote${pollTotal === 1 ? '' : 's'} in so far.` : '';
   const step = stepIndex(phase);
 
   switch (phase) {
@@ -120,7 +121,7 @@ export function describePhase(ctx) {
         step,
         tone: 'poll',
         headline: 'Chat is voting',
-        body: 'The opening poll is open. It sets the starting point - the debate begins right after.',
+        body: `The audience is voting on their phones. This sets the starting point - the debate begins right after.${votes}`,
         timerLabel: null,
       };
     case 'DEBATE':
@@ -136,7 +137,7 @@ export function describePhase(ctx) {
         step,
         tone: 'poll',
         headline: 'Final vote',
-        body: 'Chat is voting again. This decides the winner.',
+        body: `The audience is voting again. This decides the winner.${votes}`,
         timerLabel: null,
       };
     case 'RESULTS':

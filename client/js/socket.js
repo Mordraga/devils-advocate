@@ -45,6 +45,19 @@ function handleEnvelope(envelope) {
     return;
   }
 
+  // Live "N votes in" - a small update, not a snapshot. Turnout is throttled
+  // on the server, so one can arrive just after the host closed voting; it
+  // must only update a poll that is still open, never reopen it.
+  if (envelope.type === 'poll.turnout') {
+    const stillOpen = state.poll.open && state.poll.kind === envelope.data.poll;
+    applyPatch({
+      poll: stillOpen ? { ...state.poll, total: envelope.data.total } : state.poll,
+      version: envelope.version,
+      connectionStatus: 'online',
+    });
+    return;
+  }
+
   // Every other envelope's data is the exact PublicSessionStateOut shape
   // `getPublicState` returns (see api/session_state.py's
   // broadcast_session_state) - same normalizer, so a value arriving by

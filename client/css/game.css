@@ -265,3 +265,64 @@ body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
 .step-current { color: var(--gold-pale); }
 .host-main .btn-ghost, .play-main .btn-ghost { color: #c2b6c2; border-color: #4a3a4a; }
 .play-main .link-btn { color: #b3a6b3; }
+
+
+/* ── AUDIENCE VOTING (watch page) ── */
+.nav-right { display: flex; align-items: center; gap: 0.75rem; }
+.room-code {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-pale);
+}
+
+.vote-card { width: 100%; max-width: 44rem; text-align: center; padding: 1.75rem; }
+.vote-card h2 { margin: 0.4rem 0; }
+.vote-topic { font-size: 1.2rem; color: var(--gold); margin-bottom: 1.25rem; }
+
+.vote-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 560px) { .vote-buttons { grid-template-columns: 1fr; } }
+
+.vote-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  justify-content: center;
+  min-height: 7rem;
+  padding: 1.25rem 1rem;
+  background: var(--deep);
+  border: 2px solid var(--border2);
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.vote-btn:hover:not(:disabled) { border-color: var(--gold-dim); }
+.vote-btn:disabled { opacity: 0.6; cursor: wait; }
+.vote-btn[aria-pressed="true"] { border-color: var(--gold); background: #1a1408; }
+.vote-btn[aria-pressed="true"] .vote-side::before { content: '✓ '; }
+.vote-side { font-size: 1.5rem; color: var(--gold); line-height: 1.2; }
+.vote-by { font-size: 0.95rem; color: #b3a6b3; font-style: italic; }
+.vote-status { margin-top: 1rem; color: #b3a6b3; font-size: 1.05rem; }
+
+/* ── OVERLAY: joining + starting split ── */
+.join-line { font-size: 1.3rem; color: var(--gold-pale); margin-top: 0.5rem; }
+#overlay-poll-join { font-size: clamp(1.4rem, 4vw, 2.6rem); }
+#overlay-poll-count, #overlay-split-text { font-size: 1.4rem; color: var(--text); }
+#overlay-split-text { color: #b3a6b3; font-style: italic; }
+
+/* ── LANDING: enter a room code ── */
+.join-form { display: grid; gap: 0.75rem; max-width: 22rem; margin-top: 1rem; }
+.room-input {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ── HOST: manual poll fallback ── */
+.manual-poll { margin-top: 0.5rem; }
+.manual-poll summary { color: #b3a6b3; font-size: 1rem; text-transform: none; letter-spacing: 0; font-family: inherit; }
+.manual-poll[open] summary { margin-bottom: 0.75rem; }

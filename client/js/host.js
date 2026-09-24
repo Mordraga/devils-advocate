@@ -133,6 +133,27 @@ function readPoll() {
   return result;
 }
 
+// Records the poll that is open: the audience tally by default, or the
+// numbers typed into the "by hand" fallback when that is expanded.
+async function recordPoll(kind) {
+  const h = await current();
+  if ($('manual-poll')?.open) {
+    const poll = readPoll();
+    const record = kind === 'opening' ? api.recordOpeningPoll : api.recordClosingPoll;
+    await record(h.round.id, poll.a, poll.b);
+    return `${poll.a} / ${poll.b} entered by hand`;
+  }
+  try {
+    const round = await api.recordPollFromVotes(h.round.id, kind);
+    return `${Number(round[`${kind}_a`])} / ${Number(round[`${kind}_b`])} from ${h.poll.total} votes`;
+  } catch (err) {
+    if (/no votes/i.test(err.message)) {
+      throw new Error('No votes yet. Wait for someone to vote, or open "Enter a result by hand" below.');
+    }
+    throw err;
+  }
+}
+
 const actions = {
   async launch() {
     const out = await api.launchSession("Devil's Advocate", 'mordraga');
@@ -174,32 +195,29 @@ const actions = {
 
   async openPoll() {
     await moveTo('OPENING_POLL');
-    logEvent('Opening poll open');
+    logEvent('Opening vote open');
   },
 
   async startDebate() {
-    const poll = readPoll();
     const minutes = readMinutes();
-    let h = await current();
-    await api.recordOpeningPoll(h.round.id, poll.a, poll.b);
+    const summary = await recordPoll('opening');
+    const h = await current();
     await api.startTimer(h.round.id, minutes * 60_000);
     await moveTo('DEBATE');
-    logEvent(`Opening poll recorded (${poll.a} / ${poll.b}); debate started (${minutes} min)`);
+    logEvent(`Opening vote recorded (${summary}); debate started (${minutes} min)`);
   },
 
   async closePoll() {
     await moveTo('CLOSING_POLL');
-    logEvent('Closing poll open');
+    logEvent('Closing vote open');
   },
 
   async finish() {
-    const poll = readPoll();
-    let h = await current();
-    await api.recordClosingPoll(h.round.id, poll.a, poll.b);
-    h = await current();
+    const summary = await recordPoll('closing');
+    const h = await current();
     if (h.round.status === 'live') await api.finalizeRound(h.round.id);
     await moveTo('RESULTS');
-    logEvent(`Closing poll recorded (${poll.a} / ${poll.b}); winner announced`);
+    logEvent(`Closing vote recorded (${summary}); winner announced`);
   },
 
   async nextRound() {
@@ -335,12 +353,19 @@ function buildInputs(d) {
     b.addEventListener('input', () => {
       a.value = complement(b.value);
     });
+    // Audience voting is the default. Typing a result by hand (say, from a
+    // Twitch poll) is a fallback, so it stays tucked away until asked for.
     rows.push(
       el(
-        'div',
-        { class: 'poll-grid' },
-        el('div', {}, el('label', { class: 'field-label', attrs: { for: 'poll-a', id: 'poll-a-label' } }), a),
-        el('div', {}, el('label', { class: 'field-label', attrs: { for: 'poll-b', id: 'poll-b-label' } }), b),
+        'details',
+        { class: 'manual-poll', attrs: { id: 'manual-poll' } },
+        el('summary', { text: 'Enter a result by hand instead (e.g. from a Twitch poll)' }),
+        el(
+          'div',
+          { class: 'poll-grid' },
+          el('div', {}, el('label', { class: 'field-label', attrs: { for: 'poll-a', id: 'poll-a-label' } }), a),
+          el('div', {}, el('label', { class: 'field-label', attrs: { for: 'poll-b', id: 'poll-b-label' } }), b),
+        ),
       ),
     );
   }

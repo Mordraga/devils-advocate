@@ -14,7 +14,10 @@
   <nav class="site-nav">
     <div class="nav-inner">
       <a href="./index.html" class="nav-brand">Devil's Advocate</a>
-      <span class="status-pill" data-status="offline" id="connection-pill">Offline</span>
+      <div class="nav-right">
+        <span class="room-code" id="room-code" hidden></span>
+        <span class="status-pill" data-status="offline" id="connection-pill">Offline</span>
+      </div>
     </div>
   </nav>
 
@@ -23,10 +26,30 @@
        and no transparency, since this isn't an OBS browser source. -->
   <main class="game-main overlay-frame" id="overlay-frame">
 
+    <!-- Audience voting: two big buttons while a poll is open. -->
+    <section class="card card-gold vote-card" id="vote-card" hidden>
+      <div class="field-label" id="vote-kicker">Vote now</div>
+      <h2 id="vote-question">Which side are you on?</h2>
+      <p class="vote-topic" id="vote-topic"></p>
+      <p class="topic-explainer" id="vote-explainer"></p>
+      <div class="vote-buttons">
+        <button class="vote-btn" id="vote-a" type="button" aria-pressed="false">
+          <span class="vote-side" id="vote-a-text">—</span>
+          <span class="vote-by" id="vote-a-by"></span>
+        </button>
+        <button class="vote-btn" id="vote-b" type="button" aria-pressed="false">
+          <span class="vote-side" id="vote-b-text">—</span>
+          <span class="vote-by" id="vote-b-by"></span>
+        </button>
+      </div>
+      <p class="vote-status" id="vote-status" role="status"></p>
+    </section>
+
     <div id="overlay-standby">
       <div class="page-hero-sigil">⸸ ✦ ⸸</div>
       <h2>The Cauldron Simmers</h2>
       <p id="overlay-roster"></p>
+      <p class="join-line" id="overlay-join"></p>
       <p>No round is live right now.</p>
     </div>
 
@@ -54,6 +77,10 @@
       <div class="timer-display" id="overlay-timer-display">--:--</div>
     </div>
 
+    <div id="overlay-split" hidden>
+      <p id="overlay-split-text"></p>
+    </div>
+
     <div id="overlay-results" hidden>
       <h3 id="overlay-results-label">Winner</h3>
       <h1 id="overlay-winner">—</h1>
@@ -72,6 +99,7 @@
   </footer>
 
   <script type="module" src="./js/overlay.js"></script>
+  <script type="module" src="./js/watch.js"></script>
 
 </body>
 </html>

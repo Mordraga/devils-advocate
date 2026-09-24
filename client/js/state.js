@@ -40,6 +40,8 @@ export const state = {
     opening: null, // { a, b }
     closing: null, // { a, b }
   },
+  poll: { kind: null, open: false, total: 0 }, // audience voting: which poll is open + turnout (never the split)
+  openingSplit: null, // { a, b } - the audience's starting point, shown once the opening poll has closed
   winner: null, // 'A' | 'B' | 'draw' | null - only set from RESULTS onward
   results: null, // { openingA, openingB, closingA, closingB, swayA, swayB } - same
   hidden: false, // host's emergency-hide toggle (overlay.visibility_changed)

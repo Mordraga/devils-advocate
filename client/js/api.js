@@ -119,6 +119,20 @@ export const setContestantName = (token, displayName) =>
 export const setOverlayVisibility = (sessionId, hidden) =>
   request(`/sessions/${sessionId}/overlay-visibility`, { method: 'POST', body: JSON.stringify({ hidden }) });
 
+export const getPublicSession = (code) => request(`/public/sessions/${code}`);
+
+// Audience voting (public - no admin token): one vote per browser per poll,
+// changeable until the host closes voting.
+export const castVote = (code, voterId, side) =>
+  request(`/public/sessions/${code}/vote`, { method: 'POST', body: JSON.stringify({ voter_id: voterId, side }) });
+
+export const getMyVote = (code, voterId) =>
+  request(`/public/sessions/${code}/my-vote?voter_id=${encodeURIComponent(voterId)}`);
+
+// Host: close voting by recording the tally as this poll's result.
+export const recordPollFromVotes = (roundId, kind) =>
+  request(`/rounds/${roundId}/polls/${kind}/from-votes`, { method: 'POST' });
+
 // The server's public state payload (PublicSessionStateOut) is
 // snake_case JSON; this is the one place that translates it into the
 // camelCase shape the rest of the client uses, so REST reads (below) and
@@ -171,6 +185,8 @@ export function normalizePublicState(raw) {
       pausedAt: raw.timer.paused_at,
       remainingMs: raw.timer.remaining_ms,
     },
+    poll: { kind: raw.poll.kind, open: raw.poll.open, total: raw.poll.total },
+    openingSplit: raw.opening_split && { a: raw.opening_split.a, b: raw.opening_split.b },
     winner: raw.winner,
     results: raw.results && {
       openingA: raw.results.opening_a,
@@ -216,6 +232,7 @@ export function normalizeHostState(raw) {
     })),
     opening: raw.opening,
     closing: raw.closing,
+    poll: { kind: raw.poll.kind, total: raw.poll.total },
     winner: raw.winner,
     version: raw.version,
     serverOffsetMs: parseTime(raw.server_time) - Date.now(),

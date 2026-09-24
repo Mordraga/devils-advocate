@@ -97,6 +97,7 @@ function render() {
     opponentJoined: Boolean(opp?.joined),
     winner: state.winner,
     results: state.results,
+    pollTotal: state.poll.total,
   });
 
   renderStepper($('stepper'), STEPS, phase.step);

@@ -16,6 +16,7 @@ const SECTIONS = [
   'overlay-sides',
   'overlay-timer',
   'overlay-poll-indicator',
+  'overlay-split',
   'overlay-results',
   'overlay-technical-pause',
 ];
@@ -31,11 +32,13 @@ function sectionsForPhase(phase, hidden) {
     case 'REVEAL':
       return ['overlay-topic', 'overlay-sides'];
     case 'PREPARATION':
-    case 'DEBATE':
       return ['overlay-topic', 'overlay-sides', 'overlay-timer'];
+    case 'DEBATE':
+      return ['overlay-topic', 'overlay-sides', 'overlay-timer', 'overlay-split'];
     case 'OPENING_POLL':
-    case 'CLOSING_POLL':
       return ['overlay-topic', 'overlay-sides', 'overlay-poll-indicator'];
+    case 'CLOSING_POLL':
+      return ['overlay-topic', 'overlay-sides', 'overlay-poll-indicator', 'overlay-split'];
     case 'RESULTS':
     case 'ARCHIVED':
       return ['overlay-results'];
@@ -72,6 +75,20 @@ function swayLine() {
   return `Chat swung ${Math.round(Math.abs(sway) * 10) / 10} points: ${Math.round(before * 10) / 10}% to ${Math.round(after * 10) / 10}%`;
 }
 
+// Where and how to vote, for whoever is watching the stream.
+function joinLine() {
+  return state.sessionCode ? `Join at ${location.host} - room code ${state.sessionCode}` : '';
+}
+
+const round1 = (n) => Math.round(n * 10) / 10;
+
+// The audience's starting point, once the opening poll has closed.
+function splitLine() {
+  const split = state.openingSplit;
+  if (!split || !state.topic) return '';
+  return `Chat started at ${round1(split.a)}% ${state.topic.sideA} - ${round1(split.b)}% ${state.topic.sideB}`;
+}
+
 function renderTimer() {
   const el = $('overlay-timer-display');
   if (el) el.textContent = formatClock(remainingMs(state.timer, state.serverOffsetMs));
@@ -93,6 +110,24 @@ function render() {
 
   const rosterEl = $('overlay-roster');
   if (rosterEl) rosterEl.textContent = rosterLine();
+
+  const joinEl = $('overlay-join');
+  if (joinEl) joinEl.textContent = joinLine();
+  const pollJoin = $('overlay-poll-join');
+  if (pollJoin) pollJoin.textContent = joinLine();
+  const pollCount = $('overlay-poll-count');
+  if (pollCount) {
+    const n = state.poll.total;
+    pollCount.textContent = n > 0 ? `${n} vote${n === 1 ? '' : 's'} in` : 'Waiting for the first vote';
+  }
+
+  // The split element only shows when there is a split to show.
+  const splitEl = $('overlay-split');
+  if (splitEl && state.openingSplit) {
+    $('overlay-split-text').textContent = splitLine();
+  } else if (splitEl) {
+    splitEl.hidden = true;
+  }
 
   if (state.contestants.A) {
     $('overlay-side-a') && ($('overlay-side-a').textContent = state.topic?.sideA ?? '—');
