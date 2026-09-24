@@ -7,7 +7,7 @@ import { subscribe, state } from './state.js';
 import { connect } from './socket.js';
 import { redeemInvite, setContestantName } from './api.js';
 import { formatClock, remainingMs } from './timer.js';
-import { STEPS, describeInviteError, describePhase, scoreboardLines } from './copy.js';
+import { MISSING_INVITE, STEPS, describeInviteError, describePhase, scoreboardLines } from './copy.js';
 import { el, renderStepper } from './ui.js';
 import { startRitual } from './ritual.js';
 
@@ -159,20 +159,20 @@ function render() {
 
 // ---- joining / naming ------------------------------------------------------
 
-function showInviteError(message, title = "This invite doesn't work") {
+function showInviteProblem(problem) {
   show('join-card', false);
   show('room', false);
   show('invite-error', true);
-  $('invite-error-title').textContent = title;
-  $('invite-error-text').textContent = message;
+  $('invite-error-title').textContent = problem.title;
+  $('invite-error-text').textContent = problem.text;
+  $('invite-error-flourish').textContent = problem.flourish ?? '';
 }
 
 // Our invite stopped working (or the host removed us): say why, and stop
 // drawing the room.
 function endInvite(err) {
-  const problem = describeInviteError(err.message);
   me = null;
-  showInviteError(problem.text, problem.title);
+  showInviteProblem(describeInviteError(err.message));
 }
 
 async function checkStillInvited() {
@@ -244,7 +244,7 @@ startRitual();
 
 token = new URLSearchParams(location.search).get('token');
 if (!token) {
-  showInviteError('This link is missing its invite code. Ask the host for a new one.');
+  showInviteProblem(MISSING_INVITE);
 } else {
   redeemInvite(token)
     .then((redeemed) => {

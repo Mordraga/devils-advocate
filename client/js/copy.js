@@ -170,11 +170,21 @@ export function describePhase(ctx) {
  * new name.
  */
 export function describeInviteError(message = '') {
+  // No status code in the message means we never got an answer at all.
+  if (message && !/failed: \d{3}/.test(message)) {
+    return {
+      kind: 'offline',
+      title: "Couldn't reach the show",
+      text: 'Check your connection and reload this page.',
+      flourish: 'The Cauldron is not answering.',
+    };
+  }
   if (/revoked/i.test(message)) {
     return {
       kind: 'removed',
       title: "You've been removed from your seat",
-      text: 'The host has removed you from your seat. If you think this is a mistake, ask them for a new link.',
+      text: 'The host has removed you from your seat. If you think this was a mistake, ask them for a new link.',
+      flourish: 'The Cauldron will not hear your appeal.',
     };
   }
   if (/expired/i.test(message)) {
@@ -182,11 +192,21 @@ export function describeInviteError(message = '') {
       kind: 'expired',
       title: 'This invite has expired',
       text: 'Invite links only last a day. Ask the host for a new one.',
+      flourish: 'The Cauldron does not wait forever.',
     };
   }
   return {
     kind: 'invalid',
     title: "This invite doesn't work",
     text: 'This invite link is invalid or was replaced. Ask the host for a new one.',
+    flourish: 'The Cauldron does not know you.',
   };
 }
+
+/** The same voice for a link that has no invite code at all. */
+export const MISSING_INVITE = {
+  kind: 'missing',
+  title: "This invite doesn't work",
+  text: 'This link is missing its invite code. Ask the host for a new one.',
+  flourish: 'The Cauldron cannot summon a nameless witch.',
+};

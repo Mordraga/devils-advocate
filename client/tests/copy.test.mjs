@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { describeInviteError, describePhase, describeResults, scoreboardLines, stepIndex } from '../js/copy.js';
+import { MISSING_INVITE, describeInviteError, describePhase, describeResults, scoreboardLines, stepIndex } from '../js/copy.js';
 
 const results = { openingA: 70, openingB: 30, closingA: 54, closingB: 46, swayA: -16, swayB: 16 };
 
@@ -86,7 +86,24 @@ test('a revoked invite says the host removed you; an expired one says it expired
   const removed = describeInviteError('POST /public/invites/redeem failed: 410 - invite has been revoked');
   assert.equal(removed.kind, 'removed');
   assert.match(removed.text, /The host has removed you from your seat\./);
-  assert.equal(describeInviteError('failed: 410 - invite has expired').kind, 'expired');
-  assert.equal(describeInviteError('failed: 404 - invite not found').kind, 'invalid');
+  assert.equal(describeInviteError('POST /x failed: 410 - invite has expired').kind, 'expired');
+  assert.equal(describeInviteError('POST /public/invites/redeem failed: 404 - invite not found').kind, 'invalid');
+  assert.equal(describeInviteError('Failed to fetch').kind, 'offline'); // never reached the server: not the link's fault
   assert.equal(describeInviteError().kind, 'invalid');
+});
+
+test('every dead-link message has its plain sentence and a Cauldron line', () => {
+  const all = [
+    describeInviteError('x failed: 410 - invite has been revoked'),
+    describeInviteError('x failed: 410 - invite has expired'),
+    describeInviteError('x failed: 404 - invite not found'),
+    describeInviteError('Failed to fetch'),
+    MISSING_INVITE,
+  ];
+  for (const problem of all) {
+    assert.ok(problem.title && problem.text && problem.flourish, problem.kind);
+    assert.match(problem.flourish, /Cauldron/);
+    assert.match(problem.text, /Ask the host|ask them|reload/); // always says what to do next
+  }
+  assert.equal(describeInviteError('x failed: 410 - invite has been revoked').flourish, 'The Cauldron will not hear your appeal.');
 });

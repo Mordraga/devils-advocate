@@ -560,3 +560,5 @@ main.auth-locked > *:not(.auth-gate) { display: none !important; }
 .archive-result { color: var(--gold-pale); font-size: 1.15rem; margin: 0.5rem 0 0.75rem; }
 .archive-post { white-space: pre-wrap; margin-top: 0.75rem; padding: 0.75rem 1rem; border: 1px dashed var(--border2); color: var(--text); font: inherit; }
 .nav-inner.has-account .nav-links { margin-left: 2rem; margin-right: auto; }
+.invite-flourish { margin-top: 0.75rem; font-style: italic; color: var(--gold-pale); }
+.invite-flourish:empty { display: none; }
