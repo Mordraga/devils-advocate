@@ -207,7 +207,6 @@ const actions = {
     const minutes = readMinutes();
     const h = await current();
     await api.addTime(h.round.id, minutes * 60_000);
-    await moveTo('DEBATE');
     logEvent(`Added ${minutes} minutes to the timer`);
   },
 
@@ -568,6 +567,15 @@ $('btn-timer-toggle').addEventListener('click', () =>
       // again with whatever time was left.
       await api.startTimer(h.round.id, timer.remainingMs);
     }
+  }),
+);
+
+$('btn-add-time').addEventListener('click', () =>
+  runSecondary('Added time to the timer', async () => {
+    const h = await current();
+    const minutes = readMinutes();
+    await api.addTime(h.round.id, minutes * 60_000);
+    logEvent(`Added ${minutes} minutes to the timer`);
   }),
 );
 
