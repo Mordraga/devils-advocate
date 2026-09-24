@@ -71,8 +71,8 @@ function swayLine() {
   if (!r || state.winner === 'draw') return state.winner === 'draw' ? 'Chat did not move either way' : '';
   const isA = state.winner === 'A';
   const sway = isA ? r.swayA : r.swayB;
-  // No movement but a winner: the majority decided.
-  if (Math.abs(sway) < 0.005) return `Chat held steady at ${Math.round((isA ? r.closingA : r.closingB) * 10) / 10}% - the majority decides`;
+  // No movement but a winner: a draw on swing, decided by the majority.
+  if (Math.abs(sway) < 0.005) return `A draw on swing - the majority decides: ${Math.round((isA ? r.closingA : r.closingB) * 10) / 10}%`;
   const before = isA ? r.openingA : r.openingB;
   const after = isA ? r.closingA : r.closingB;
   return `Chat swung ${Math.round(Math.abs(sway) * 10) / 10} points: ${Math.round(before * 10) / 10}% to ${Math.round(after * 10) / 10}%`;

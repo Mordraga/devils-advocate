@@ -20,7 +20,7 @@ export function resultLine(entry) {
   const points = entry.sway?.[key];
   if (before == null || after == null || points == null) return `${winner} won.`;
   const target = sideText(entry, entry.winner);
-  if (Math.abs(points) < 0.005) return `${winner} won by majority: chat held steady at ${round1(after)}% for ${quoted(target)}.`;
+  if (Math.abs(points) < 0.005) return `A draw on swing, so the majority decided: ${winner} won with ${round1(after)}% for ${quoted(target)}.`;
   return `${winner} won: chat swung ${round1(Math.abs(points))} points toward ${quoted(target)} (${round1(before)}% to ${round1(after)}%).`;
 }
 

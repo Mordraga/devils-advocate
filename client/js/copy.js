@@ -59,14 +59,14 @@ export function describeResults({ mySide, winner, results }) {
     tone = 'lose';
   }
 
-  // No movement, but a winner: the audience was one voter who held their side,
-  // so the majority decided (the server's rule; see rounds.py finalize).
+  // No movement, but a winner: it was a draw on swing, so the majority of the
+  // closing vote decided (the server's rule; see scoring.resolve_winner).
   const byMajority = winner !== 'draw' && results && Math.abs(results.swayA) < 0.005 && Math.abs(results.swayB) < 0.005;
 
   let swing = null;
   if (byMajority && mySide) {
     const winning = winner === 'A' ? results.closingA : results.closingB;
-    swing = `Chat didn't move, so the majority decided: the winning side held ${percent(winning)}.`;
+    swing = `It was a draw on swing - chat didn't move - so the majority decided: the winning side held ${percent(winning)}.`;
   } else if (results && mySide) {
     const mine = mySide === 'A' ? results.swayA : results.swayB;
     const before = mySide === 'A' ? results.openingA : results.openingB;
