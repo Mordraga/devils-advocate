@@ -392,3 +392,4 @@ body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
 .connect-desc { font-size: 1.15rem; line-height: 1.45; }
 .connect-cta { margin-top: 0.5rem; color: var(--gold-pale); font-size: 1.1rem; }
 @media (prefers-reduced-motion: reduce) { .connect-card { transition: none; } .connect-card:hover { transform: none; } }
+.about-recruit a { color: var(--gold); }
