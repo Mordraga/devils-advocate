@@ -162,3 +162,31 @@ export function describePhase(ctx) {
       return { step, tone: 'wait', headline: 'Waiting', body: 'Waiting for the host.', timerLabel: null };
   }
 }
+
+/**
+ * What to tell a contestant whose invite link no longer works, from the
+ * server's refusal message. A revoked link means the host removed them from
+ * their seat, and they should be told so plainly rather than just asked for a
+ * new name.
+ */
+export function describeInviteError(message = '') {
+  if (/revoked/i.test(message)) {
+    return {
+      kind: 'removed',
+      title: "You've been removed from your seat",
+      text: 'The host has removed you from your seat. If you think this is a mistake, ask them for a new link.',
+    };
+  }
+  if (/expired/i.test(message)) {
+    return {
+      kind: 'expired',
+      title: 'This invite has expired',
+      text: 'Invite links only last a day. Ask the host for a new one.',
+    };
+  }
+  return {
+    kind: 'invalid',
+    title: "This invite doesn't work",
+    text: 'This invite link is invalid or was replaced. Ask the host for a new one.',
+  };
+}

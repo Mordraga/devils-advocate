@@ -411,15 +411,18 @@ async function newPage(browser, label, viewport) {
     console.log('');
     console.log('HOST: remove a contestant');
     await host.click('#now-invites .invite-row:nth-child(2) .link-btn'); // Dave (the dialog is auto-accepted)
+    allow410 += 1; // Dave's open page checks whether his link still works
     await waitFor(host, () => document.querySelectorAll('#now-invites .badge-gold').length === 1);
     check(true, 'removing Dave empties his seat on the host roster');
-    await waitFor(bob, () => !document.querySelector('#join-card').hidden);
-    check(true, "Dave's page asks for a name again");
+    // Dave is told what happened - not just asked for a new name.
+    await waitFor(bob, () => !document.querySelector('#invite-error').hidden);
+    check((await text(bob, '#invite-error-title')).includes('removed from your seat'), "Dave's page says he was removed");
+    check((await text(bob, '#invite-error-text')).includes('The host has removed you from your seat.'), 'and gives the reason plainly');
+    check(!(await visible(bob, '#join-card')) && !(await visible(bob, '#room')), 'with no name form or room left to poke at');
     allow410 += 1;
-    await bob.type('#join-name', 'Sneaky');
-    await bob.click('#join-submit');
-    await waitFor(bob, () => document.querySelector('#join-error').textContent.includes('removed this link'));
-    check(true, 'his old link no longer lets him back in, and says why');
+    await bob.reload();
+    await waitFor(bob, () => !document.querySelector('#invite-error').hidden);
+    check((await text(bob, '#invite-error-text')).includes('The host has removed you from your seat.'), 'opening his old link later says the same');
     check(!(await host.$eval('#btn-primary', (b) => !b.disabled)), 'and the host cannot deal until the seat is filled');
 
     console.log('\nBROWSER ERRORS:', errors.length ? '' : 'none');

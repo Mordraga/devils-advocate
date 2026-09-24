@@ -7,7 +7,7 @@ import { subscribe, state } from './state.js';
 import { connect } from './socket.js';
 import { redeemInvite, setContestantName } from './api.js';
 import { formatClock, remainingMs } from './timer.js';
-import { STEPS, describePhase, scoreboardLines } from './copy.js';
+import { STEPS, describeInviteError, describePhase, scoreboardLines } from './copy.js';
 import { el, renderStepper } from './ui.js';
 import { startRitual } from './ritual.js';
 
@@ -19,6 +19,7 @@ let me = null; // { contestantId, seat, name, joined } once the invite is redeem
 let editingName = false;
 let notesRound = null;
 let wasJoined = null; // whether the server had this seat's name last time we looked
+let probing = false; // checking whether our invite link still works after the seat was cleared
 
 function mySide() {
   if (!me) return null;
@@ -85,21 +86,21 @@ function render() {
 
   if (!me) return;
 
-  // The host started a new round with fresh contestants: this seat's name was
-  // cleared on the server, so ask for a name again. (Only a true -> false change
-  // counts, so the moment right after submitting a name can't trip it.)
+  // This seat's name was cleared on the server. That means either the host
+  // started a new round with fresh contestants (ask for a name again) or the
+  // host removed this person (tell them so). The invite link tells the two
+  // apart, so ask the server. (Only a true -> false change counts, so the
+  // moment right after submitting a name can't trip it.)
   const seat = state.roster[me.seat];
   if (seat && wasJoined === true && seat.joined === false && me.joined) {
     me.joined = false;
     editingName = false;
-    $('join-title').textContent = 'New round - pick your name';
-    $('join-blurb').textContent = 'The host started a new round. Pick the name the host, chat and your opponent will see.';
-    $('join-name').value = '';
-    $('join-name').focus();
+    probing = true;
+    checkStillInvited();
   }
   if (seat) wasJoined = seat.joined;
 
-  const needsName = !me.joined || editingName;
+  const needsName = (!me.joined || editingName) && !probing;
   show('join-card', needsName);
   show('room', me.joined);
   if (!me.joined) return;
@@ -158,11 +159,37 @@ function render() {
 
 // ---- joining / naming ------------------------------------------------------
 
-function showInviteError(message) {
+function showInviteError(message, title = "This invite doesn't work") {
   show('join-card', false);
   show('room', false);
   show('invite-error', true);
+  $('invite-error-title').textContent = title;
   $('invite-error-text').textContent = message;
+}
+
+// Our invite stopped working (or the host removed us): say why, and stop
+// drawing the room.
+function endInvite(err) {
+  const problem = describeInviteError(err.message);
+  me = null;
+  showInviteError(problem.text, problem.title);
+}
+
+async function checkStillInvited() {
+  try {
+    await redeemInvite(token);
+    // Still valid: a new round. Ask for a name again.
+    $('join-title').textContent = 'New round - pick your name';
+    $('join-blurb').textContent = 'The host started a new round. Pick the name the host, chat and your opponent will see.';
+    $('join-name').value = '';
+    probing = false;
+    render();
+    $('join-name').focus();
+  } catch (err) {
+    probing = false;
+    if (/failed: 410/.test(err.message)) endInvite(err);
+    else render(); // couldn't tell (offline?) - the name form is the safe fallback
+  }
 }
 
 function applyIdentity(redeemed) {
@@ -188,9 +215,11 @@ $('join-form').addEventListener('submit', async (event) => {
     editingName = false;
     render();
   } catch (err) {
-    error.textContent = /failed: 410/.test(err.message)
-      ? 'The host removed this link. Ask them for a new one.'
-      : "Couldn't save your name - check your connection and try again.";
+    if (/failed: 410/.test(err.message)) {
+      endInvite(err);
+      return;
+    }
+    error.textContent = "Couldn't save your name - check your connection and try again.";
     error.hidden = false;
   } finally {
     button.disabled = false;
@@ -224,5 +253,5 @@ if (!token) {
       render();
       if (!me.joined) $('join-name').focus();
     })
-    .catch(() => showInviteError('This invite link is invalid, has expired, or was replaced. Ask the host for a new one.'));
+    .catch((err) => endInvite(err));
 }

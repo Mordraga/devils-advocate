@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { describePhase, describeResults, scoreboardLines, stepIndex } from '../js/copy.js';
+import { describeInviteError, describePhase, describeResults, scoreboardLines, stepIndex } from '../js/copy.js';
 
 const results = { openingA: 70, openingB: 30, closingA: 54, closingB: 46, swayA: -16, swayB: 16 };
 
@@ -80,4 +80,13 @@ test('no movement but a winner is explained as a majority decision', () => {
   assert.match(describeResults({ mySide: 'B', winner: 'A', results }).swing, /majority decided/);
   // a genuine draw keeps its own wording
   assert.match(describeResults({ mySide: 'A', winner: 'draw', results }).swing, /not at all/);
+});
+
+test('a revoked invite says the host removed you; an expired one says it expired', () => {
+  const removed = describeInviteError('POST /public/invites/redeem failed: 410 - invite has been revoked');
+  assert.equal(removed.kind, 'removed');
+  assert.match(removed.text, /The host has removed you from your seat\./);
+  assert.equal(describeInviteError('failed: 410 - invite has expired').kind, 'expired');
+  assert.equal(describeInviteError('failed: 404 - invite not found').kind, 'invalid');
+  assert.equal(describeInviteError().kind, 'invalid');
 });
