@@ -27,6 +27,11 @@ test('a side that is already quoted is not quoted twice', () => {
   assert.equal(resultLine(e), 'Bob won: chat swung 16 points toward "Yanny" (30% to 46%).');
 });
 
+test('a win with no movement reads as a majority decision', () => {
+  const e = entry({ winner: 'A', winnerName: 'Alice', sway: { a: 0, b: 0 }, opening: { a: 100, b: 0 }, closing: { a: 100, b: 0 } });
+  assert.equal(resultLine(e), 'Alice won by majority: chat held steady at 100% for "Yes".');
+});
+
 test('a draw, a void round and a missing result each get their own line', () => {
   assert.match(resultLine(entry({ winner: 'draw', winnerName: null })), /draw/);
   assert.match(resultLine(entry({ status: 'void', winner: null })), /voided/);

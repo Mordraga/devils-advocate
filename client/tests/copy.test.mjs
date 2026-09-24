@@ -70,3 +70,14 @@ test('scoreboard lists both sides with the viewer first', () => {
   assert.deepEqual(asB, ['Bob: 30% → 46% (+16)', 'Alice: 70% → 54% (-16)']);
   assert.deepEqual(scoreboardLines({ mySide: null, results, myName: 'x' }), []);
 });
+
+test('no movement but a winner is explained as a majority decision', () => {
+  const results = { openingA: 100, openingB: 0, closingA: 100, closingB: 0, swayA: 0, swayB: 0 };
+  const win = describeResults({ mySide: 'A', winner: 'A', results });
+  assert.equal(win.verdict, 'You won!');
+  assert.match(win.swing, /majority decided/);
+  assert.match(win.swing, /100%/);
+  assert.match(describeResults({ mySide: 'B', winner: 'A', results }).swing, /majority decided/);
+  // a genuine draw keeps its own wording
+  assert.match(describeResults({ mySide: 'A', winner: 'draw', results }).swing, /not at all/);
+});
