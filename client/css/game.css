@@ -188,6 +188,8 @@ body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
 .now-inputs { margin-top: 1.25rem; display: grid; gap: 1rem; max-width: 34rem; }
 .poll-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .minutes-row { max-width: 12rem; }
+.join-session { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); max-width: 34rem; }
+.join-session .crypt-input { max-width: 12rem; text-transform: uppercase; letter-spacing: 0.15em; }
 @media (max-width: 680px) { .poll-grid { grid-template-columns: 1fr; } }
 
 .now-timer { margin-top: 1.25rem; text-align: center; }

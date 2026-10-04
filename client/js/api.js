@@ -81,6 +81,9 @@ export const createSession = (title, createdBy) =>
 
 export const getSession = (id) => request(`/sessions/${id}`);
 
+// A co-host joining a running show by its room code (host sign-in required).
+export const findSessionByCode = (code) => request(`/sessions/by-code/${encodeURIComponent(code)}`);
+
 // One call: session + two unnamed seats + first round + an invite per seat.
 export const launchSession = (title, createdBy) =>
   request('/sessions/launch', { method: 'POST', body: JSON.stringify({ title, created_by: createdBy }) });

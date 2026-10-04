@@ -64,6 +64,14 @@
         <p class="now-hint" id="now-hint"></p>
         <button class="link-btn" id="btn-skip-wait" type="button" hidden>Start without waiting</button>
       </div>
+      <!-- Co-hosting: pick up a show another host already started. -->
+      <form class="join-session" id="join-session" hidden>
+        <label class="field-label" for="join-code">Or join a session another host started</label>
+        <div class="control-group">
+          <input class="crypt-input" id="join-code" type="text" placeholder="Room code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="16">
+          <button class="btn btn-ghost" id="btn-join" type="submit">Join as co-host</button>
+        </div>
+      </form>
       <!-- The other ways on from a finished round. -->
       <div class="now-alternatives" id="now-alternatives" hidden></div>
       <a class="link-btn now-archive-link" id="now-archive-link" href="./archive.html" hidden>See it in the archive</a>
@@ -86,6 +94,7 @@
       <div class="control-group">
         <button class="btn btn-ghost" id="btn-copy-overlay" type="button">Copy OBS overlay link</button>
         <button class="btn btn-ghost" id="btn-copy-watch" type="button">Copy audience link</button>
+        <button class="btn btn-ghost" id="btn-copy-cohost" type="button">Copy co-host link</button>
       </div>
       <div class="invite-list" id="links-invites"></div>
     </section>

@@ -4,7 +4,7 @@
 // sequence of API calls. Nothing loads until auth.js has signed the host in
 // (Twitch login, or the shared admin token as a fallback).
 
-import { PHASES, state, subscribe } from './state.js';
+import { PHASES, applyPatch, state, subscribe } from './state.js';
 import * as api from './api.js';
 import { connect, disconnect } from './socket.js';
 import { withApi } from './config.js';
@@ -52,6 +52,8 @@ function forgetSession() {
   for (const seat of Object.keys(inviteCache)) delete inviteCache[seat];
   ui.skipWait = false;
   structureKey = '';
+  overlayHidden = false;
+  applyPatch({ hidden: false });
   try {
     localStorage.removeItem(SAVED_KEY);
   } catch {
@@ -167,6 +169,26 @@ const actions = {
     structureKey = '';
     connect(out.session.public_code);
     logEvent(`Session ${out.session.public_code} started`);
+  },
+
+  // Co-hosting: take over driving a session another host started. Sign-in is
+  // what authorizes; the room code only says which session.
+  async join() {
+    const code = ($('join-code').value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!code) throw new Error('Enter the room code of the session to join.');
+    let session;
+    try {
+      session = await api.findSessionByCode(code);
+    } catch (err) {
+      if (/failed: 404/.test(err.message)) throw new Error(`No session has the room code ${code}.`);
+      throw err;
+    }
+    forgetSession();
+    sessionId = session.id;
+    saveSessionId();
+    $('join-code').value = '';
+    connect(session.public_code);
+    logEvent(`Joined session ${session.public_code} as a co-host`);
   },
 
   // Draw a topic and assign sides in one go. Each step checks what is
@@ -534,8 +556,12 @@ function render() {
   $('btn-skip-wait').hidden = !d.canSkipWait || ui.skipWait;
   renderAlternatives(d);
 
+  $('join-session').hidden = Boolean(host);
+  $('btn-join').disabled = busy;
+  $('btn-hide').textContent = overlayHidden ? 'Show overlay again' : 'Emergency hide overlay';
+
   // Secondary controls only make sense with a session running.
-  for (const id of ['btn-copy-overlay', 'btn-copy-watch', 'btn-back', 'btn-hide', 'btn-void', 'btn-reroll', 'btn-forget']) {
+  for (const id of ['btn-copy-overlay', 'btn-copy-watch', 'btn-copy-cohost', 'btn-back', 'btn-hide', 'btn-void', 'btn-reroll', 'btn-forget']) {
     $(id).disabled = !host;
   }
 }
@@ -592,6 +618,23 @@ async function copyShowLink(page, label, button) {
 $('btn-copy-overlay').addEventListener('click', (e) => copyShowLink('overlay.html', 'overlay', e.currentTarget));
 $('btn-copy-watch').addEventListener('click', (e) => copyShowLink('watch.html', 'audience', e.currentTarget));
 
+// A co-host opens this, signs in, and lands in the same session (see JOIN_CODE).
+$('btn-copy-cohost').addEventListener('click', async (e) => {
+  if (!host) return;
+  const url = pageLink('host.html', `join=${host.session.publicCode}`);
+  if (await copyText(url)) {
+    flash(e.currentTarget, 'Copied ✓');
+    logEvent('Copied co-host link');
+  } else {
+    showLinkFallback('co-host link', url);
+  }
+});
+
+$('join-session').addEventListener('submit', (e) => {
+  e.preventDefault();
+  runAction('join');
+});
+
 $('btn-back').addEventListener('click', () =>
   runSecondary('Went back one phase', async () => {
     const h = await current();
@@ -604,7 +647,6 @@ $('btn-back').addEventListener('click', () =>
 $('btn-hide').addEventListener('click', () =>
   runSecondary(overlayHidden ? 'Overlay shown' : 'Overlay hidden', async () => {
     overlayHidden = !overlayHidden;
-    $('btn-hide').textContent = overlayHidden ? 'Show overlay again' : 'Emergency hide overlay';
     await api.setOverlayVisibility(sessionId, overlayHidden);
   }),
 );
@@ -632,6 +674,11 @@ $('btn-forget').addEventListener('click', () => {
 let lastVersion = -1;
 subscribe(() => {
   renderConnection();
+  // Another host may have hidden or shown the overlay.
+  if (typeof state.hidden === 'boolean' && state.hidden !== overlayHidden) {
+    overlayHidden = state.hidden;
+    render();
+  }
   // Any broadcast means something changed - refetch the host view.
   if (state.version !== lastVersion) {
     lastVersion = state.version;
@@ -646,8 +693,20 @@ setInterval(() => {
 
 startTimerPop(); // a "+5 min" floats up from the clock when time is added
 
+// A co-host link (host.html?join=CODE): join that session once signed in.
+const JOIN_CODE = new URLSearchParams(location.search).get('join');
+
 // Sign in first, then pick the previous session back up after a refresh.
 requireAuth().then(() => {
+  if (JOIN_CODE) {
+    $('join-code').value = JOIN_CODE;
+    // Drop ?join= so a later refresh resumes rather than re-joining.
+    const url = new URL(location.href);
+    url.searchParams.delete('join');
+    history.replaceState(null, '', url);
+    runAction('join');
+    return;
+  }
   if (!sessionId) return;
   refresh()
     .then(() => {
