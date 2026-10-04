@@ -17,6 +17,7 @@
     <div class="nav-inner">
       <a href="./index.html" class="nav-brand">Devil's Advocate</a>
       <div class="nav-right">
+        <span class="room-code" id="room-code" hidden></span>
         <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="false">Enable sound</button>
         <span class="status-pill" data-status="offline" id="connection-pill">Offline</span>
       </div>
@@ -87,6 +88,18 @@
         <div class="field-label">Your notes for this round</div>
         <p class="notes-hint" id="notes-hint">Only you can see these. They stay in this browser and start fresh each round.</p>
         <textarea class="crypt-input" id="private-notes" rows="6" placeholder="Arguments, examples, comebacks…"></textarea>
+      </section>
+
+      <!-- Contestants stream too: give them what their own audience needs. -->
+      <section class="card" id="stream-card" hidden>
+        <div class="field-label">For your stream</div>
+        <p class="stream-code">Room code <strong id="stream-code"></strong></p>
+        <div class="control-group">
+          <button class="btn btn-ghost" id="btn-copy-code" type="button">Copy room code</button>
+          <button class="btn btn-ghost" id="btn-copy-overlay" type="button">Copy OBS overlay link</button>
+          <button class="btn btn-ghost" id="btn-copy-watch" type="button">Copy audience voting link</button>
+        </div>
+        <p class="notes-hint">Add the overlay link in OBS as a Browser Source (1920×1080). It plays its own sound effects. Tick "Control audio via OBS" to mix them. Post the voting link in your chat so your viewers can vote too.</p>
       </section>
     </div>
   </main>

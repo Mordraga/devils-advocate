@@ -8,7 +8,8 @@ import { connect } from './socket.js';
 import { redeemInvite, setContestantName } from './api.js';
 import { formatClock, remainingMs } from './timer.js';
 import { MISSING_INVITE, STEPS, describeInviteError, describePhase, scoreboardLines } from './copy.js';
-import { el, renderStepper } from './ui.js';
+import { copyText, el, flash, renderStepper } from './ui.js';
+import { withApi } from './config.js';
 import { startRitual } from './ritual.js';
 
 const $ = (id) => document.getElementById(id);
@@ -85,6 +86,12 @@ function render() {
     state.connectionStatus;
 
   if (!me) return;
+
+  const code = state.sessionCode;
+  $('room-code').hidden = !code;
+  $('room-code').textContent = code ? `Room ${code}` : '';
+  show('stream-card', Boolean(code));
+  $('stream-code').textContent = code ?? '';
 
   // This seat's name was cleared on the server. That means either the host
   // started a new round with fresh contestants (ask for a name again) or the
@@ -235,6 +242,25 @@ $('btn-change-name').addEventListener('click', () => {
   render();
   $('join-name').focus();
 });
+
+// ---- for the contestant's own stream ---------------------------------------
+// The same overlay / voting links the host hands out: they only show the
+// show, so they're safe to give a contestant.
+
+async function copyForStream(button, label, text) {
+  if (await copyText(text)) flash(button, 'Copied ✓');
+  else window.prompt(`Copy this ${label}:`, text);
+}
+
+const showLink = (page) => withApi(new URL(`${page}?session=${state.sessionCode}`, location.href).href);
+
+$('btn-copy-code').addEventListener('click', (e) => copyForStream(e.currentTarget, 'room code', state.sessionCode));
+$('btn-copy-overlay').addEventListener('click', (e) =>
+  copyForStream(e.currentTarget, 'overlay link', showLink('overlay.html')),
+);
+$('btn-copy-watch').addEventListener('click', (e) =>
+  copyForStream(e.currentTarget, 'voting link', showLink('watch.html')),
+);
 
 // ---- start -----------------------------------------------------------------
 

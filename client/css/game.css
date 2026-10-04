@@ -278,6 +278,8 @@ body.overlay-page .site-nav, body.overlay-page .site-footer { display: none; }
   text-transform: uppercase;
   color: var(--gold-pale);
 }
+.stream-code { margin: 0.5rem 0 0; }
+.stream-code strong { font-size: 1.4rem; letter-spacing: 0.2em; color: var(--gold); margin-left: 0.5rem; }
 
 .vote-card { width: 100%; max-width: 44rem; text-align: center; padding: 1.75rem; }
 .vote-card h2 { margin: 0.4rem 0; }
