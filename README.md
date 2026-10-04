@@ -56,12 +56,16 @@ The full loop works end to end in a real browser (see Tests below).
 - **Host** (`host.html`) is guided: the round's phase decides the one thing to
   do next. Step one is inviting - *Start a session* creates two invite links,
   contestants pick their own names when they join, and the host sees who has
-  arrived. One big button then moves through: draw topic & sides, reveal,
-  start prep (the audience's opening vote opens with it, so viewers vote while
-  contestants prepare), then "close voting & start debate" (the tally is
-  recorded for you; typing a result by hand is the fallback, autofilled to total
-  100), closing vote, announce the winner, next round. The host can see
-  the topic and sides before the audience does. Rarely-needed controls (back a
+  arrived. About a week before the show the host draws the topic: contestants
+  see it on their page straight away (both stances, since either could be
+  theirs), the audience doesn't. On show day one big button moves through:
+  the cauldron assigns sides, reveal, open the opening vote (a short one -
+  viewers vote before hearing any arguments), then "close voting & start
+  debate" (the tally is recorded for you; typing a result by hand is the
+  fallback, autofilled to total 100), closing vote, announce the winner, next
+  round. The host can see the topic and sides before the audience does.
+  Invite links last two weeks. A co-host can join a running session with its
+  room code (or a copied co-host link) after signing in. Rarely-needed controls (back a
   phase, void, clear polls, emergency hide) sit under "More controls". A
   refresh resumes the session. When a round ends the host chooses: **New round,
   new contestants** (both names are cleared and each contestant is asked for a
@@ -71,7 +75,8 @@ The full loop works end to end in a real browser (see Tests below).
   (what is happening, what to do), a step indicator, the question with its
   explainer line, their own stance and their opponent's, a live countdown,
   per-round notes (private, kept in their browser), and at the end the winner
-  and the swing.
+  and the swing. They get the topic a week early, and a "For your stream" card
+  with the room code, the OBS overlay link and the audience voting link.
 - **Watch** (`watch.html`) is where the audience votes: enter the room code on
   the landing page (`index.html`), and two big buttons appear on your phone
   while a poll is open. One vote per browser per poll, changeable until the

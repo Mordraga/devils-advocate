@@ -21,12 +21,33 @@ let editingName = false;
 let notesRound = null;
 let wasJoined = null; // whether the server had this seat's name last time we looked
 let probing = false; // checking whether our invite link still works after the seat was cleared
+let privateTopic = null; // { roundId, prompt, explainer, sideA, sideB }: this week's topic, before the audience sees it
+let topicAskedFor = null; // the round:version we last asked the server about
 
 function mySide() {
   if (!me) return null;
   if (state.contestants.A?.id === me.contestantId) return 'A';
   if (state.contestants.B?.id === me.contestantId) return 'B';
   return null;
+}
+
+// The topic goes to contestants about a week before the show, through their
+// invite (the public state keeps it hidden until REVEAL). Ask again whenever
+// something changes in the lobby, until this round's topic has arrived.
+function checkPrivateTopic() {
+  if (state.topic || !['LOBBY', 'TOPIC_LOCKED'].includes(state.phase) || !state.roundId) return;
+  if (privateTopic?.roundId === state.roundId) return;
+  const roundId = state.roundId;
+  const key = `${roundId}:${state.version}`;
+  if (key === topicAskedFor) return;
+  topicAskedFor = key;
+  redeemInvite(token)
+    .then(({ topic }) => {
+      if (!topic || state.roundId !== roundId) return;
+      privateTopic = { roundId, prompt: topic.prompt, explainer: topic.explainer, sideA: topic.side_a, sideB: topic.side_b };
+      render();
+    })
+    .catch(() => {}); // a later change asks again
 }
 
 function opponent() {
@@ -112,6 +133,9 @@ function render() {
   show('room', me.joined);
   if (!me.joined) return;
 
+  checkPrivateTopic();
+  const topic = state.topic ?? (privateTopic?.roundId === state.roundId ? privateTopic : null);
+
   const side = mySide();
   const opp = opponent();
   const phase = describePhase({
@@ -123,6 +147,7 @@ function render() {
     results: state.results,
     pollTotal: state.poll.total,
     voided: state.voided,
+    hasTopic: Boolean(topic),
   });
 
   renderStepper($('stepper'), STEPS, phase.step);
@@ -136,15 +161,23 @@ function render() {
   show('timer-card', Boolean(phase.timerLabel));
   if (phase.timerLabel) renderTimer(phase.timerLabel, true);
 
-  // The question + what it means, from REVEAL onward.
-  show('topic-card', Boolean(state.topic));
-  $('topic-prompt').textContent = state.topic?.prompt ?? '';
-  $('topic-explainer').textContent = state.topic?.explainer ?? '';
-  $('topic-explainer').hidden = !state.topic?.explainer;
+  // The question + what it means: a week early for contestants, then for everyone.
+  show('topic-card', Boolean(topic));
+  $('topic-prompt').textContent = topic?.prompt ?? '';
+  $('topic-explainer').textContent = topic?.explainer ?? '';
+  $('topic-explainer').hidden = !topic?.explainer;
 
   // Which side is mine - and what the other one argues.
   const dealt = Boolean(state.topic && side);
   show('side-grid', dealt);
+  show('topic-sides', Boolean(topic) && !dealt);
+  if (topic && !dealt) {
+    $('topic-sides').replaceChildren(
+      el('li', { text: `One side: ${topic.sideA}` }),
+      el('li', { text: `The other: ${topic.sideB}` }),
+      el('li', { text: 'You could get either - the cauldron decides on show day.' }),
+    );
+  }
   if (dealt) {
     const mine = side === 'A' ? state.topic.sideA : state.topic.sideB;
     const theirs = side === 'A' ? state.topic.sideB : state.topic.sideA;

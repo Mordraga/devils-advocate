@@ -23,6 +23,9 @@ const SECTIONS = [
   'overlay-technical-pause',
 ];
 
+// Heading over the clock.
+const PHASE_LABEL = { PREPARATION: 'Opening vote', DEBATE: 'Debate' };
+
 function sectionsForPhase(phase, hidden, voided) {
   // Emergency hide (spec 5.A "switch to standby card") overrides
   // whatever the phase would normally show.
@@ -147,7 +150,7 @@ function render() {
     $('overlay-contestant-b') && ($('overlay-contestant-b').textContent = state.contestants.B.displayName);
   }
 
-  $('overlay-phase-label') && ($('overlay-phase-label').textContent = state.phase.replace('_', ' '));
+  $('overlay-phase-label') && ($('overlay-phase-label').textContent = PHASE_LABEL[state.phase] ?? state.phase.replace('_', ' '));
   renderTimer();
 
   if (state.winner) {

@@ -191,15 +191,22 @@ const actions = {
     logEvent(`Joined session ${session.public_code} as a co-host`);
   },
 
-  // Draw a topic and assign sides in one go. Each step checks what is
-  // already done, so pressing it again after a failure just carries on.
+  // A week before the show: contestants see the topic as soon as it's drawn.
+  async drawTopic() {
+    const h = await current();
+    if (!h.topic) await api.drawTopic(h.round.id);
+    logEvent("This week's topic drawn - contestants can see it now");
+  },
+
+  // Show day: the cauldron assigns sides. Each step checks what is already
+  // done, so pressing it again after a failure just carries on.
   async deal() {
     let h = await current();
     if (!h.topic) await api.drawTopic(h.round.id);
     h = await current();
     if (!h.contestants.some((c) => c.side)) await api.assignSides(h.round.id);
     if (h.round.phase === 'LOBBY') await api.transitionPhase(h.round.id, 'TOPIC_LOCKED');
-    logEvent('Topic and sides locked in');
+    logEvent('Sides assigned');
   },
 
   async reveal() {
@@ -214,7 +221,7 @@ const actions = {
     // that is already running, never to a blank "--:--".
     await api.startTimer(h.round.id, minutes * 60_000);
     await moveTo('PREPARATION');
-    logEvent(`Preparation started (${minutes} min)`);
+    logEvent(`Opening vote open (${minutes} min)`);
   },
 
   async startDebate() {
@@ -454,7 +461,7 @@ function renderTable() {
   if (card.hidden) return;
 
   const revealed = PHASES.indexOf(host.round.phase) >= REVEAL_INDEX;
-  $('table-visibility').textContent = revealed ? 'Everyone can see this' : 'Only you can see this yet';
+  $('table-visibility').textContent = revealed ? 'Everyone can see this' : "Contestants can see the topic; the audience can't yet";
   $('table-prompt').textContent = host.topic.prompt;
   $('table-explainer').textContent = host.topic.explainer ?? '';
 
@@ -466,7 +473,7 @@ function renderTable() {
 }
 
 function timerPhaseLabel(phase) {
-  return phase === 'PREPARATION' ? 'Preparation timer' : phase === 'DEBATE' ? 'Debate timer' : 'Timer';
+  return phase === 'PREPARATION' ? 'Opening vote timer' : phase === 'DEBATE' ? 'Debate timer' : 'Timer';
 }
 
 function renderTimer(d) {
@@ -580,7 +587,7 @@ $('btn-timer-toggle').addEventListener('click', () =>
     const h = await current();
     const timer = h.round.timer;
     if (timer.startedAt == null) {
-      const minutes = h.round.phase === 'DEBATE' ? DEFAULT_MINUTES.debate : DEFAULT_MINUTES.prep;
+      const minutes = h.round.phase === 'DEBATE' ? DEFAULT_MINUTES.debate : DEFAULT_MINUTES.vote;
       await api.startTimer(h.round.id, minutes * 60_000);
     } else if (timer.pausedAt == null) {
       await api.pauseTimer(h.round.id);

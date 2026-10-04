@@ -108,12 +108,12 @@ async function newPage(browser, label, viewport) {
     await shot(host, 'host-empty');
 
     await clickPrimary();
-    await title('Invite your contestants');
+    await title('Invite contestants');
     const code = launch.session.public_code;
     check(launch && launch.invites.length === 2, 'launch returned two invites');
     check((await host.$$('#now-invites .invite-row')).length === 2, 'two invite rows are shown as step one');
-    check(await host.$eval('#btn-primary', (b) => b.disabled), 'deal is locked until both contestants join');
-    check((await text(host, '#now-hint')).includes('Waiting for'), 'the hint says who we are waiting for');
+    check((await text(host, '#btn-primary')) === "Draw this week's topic", "step one offers to draw this week's topic");
+    check(!(await host.$eval('#btn-primary', (b) => b.disabled)), 'which does not wait for anyone to join');
     check((await text(host, '#now-step')) === 'Step 1 of 7', 'step counter reads 1 of 7');
     await shot(host, 'host-invite-step');
 
@@ -140,7 +140,7 @@ async function newPage(browser, label, viewport) {
       await page.click('#join-submit');
       await page.waitForSelector('#room:not([hidden])', { timeout: 15000 });
       players[name] = page;
-      check((await text(page, '#banner-headline')).includes('lobby'), `${name}: sees the lobby banner`);
+      check((await text(page, '#banner-headline')) === "You're in", `${name}: sees the lobby banner`);
       if (name === 'Alice') {
         check((await text(page, '#banner-body')).includes('Waiting for your opponent'), 'Alice is told her opponent has not joined yet');
       }
@@ -148,8 +148,8 @@ async function newPage(browser, label, viewport) {
     const { Alice: alice, Bob: bob } = players;
     await waitFor(alice, () => document.querySelector('#banner-body').textContent.includes('Bob is here'));
     check(true, 'Alice is told Bob has arrived (live roster over the websocket)');
-    await waitFor(host, () => !document.querySelector('#btn-primary').disabled);
-    check((await host.$$eval('#now-invites .badge-gold', (e) => e.length)) === 2, 'host roster shows both contestants joined');
+    await waitFor(host, () => document.querySelectorAll('#now-invites .badge-gold').length === 2);
+    check(true, 'host roster shows both contestants joined');
 
     // ============================================== audience + stream screens
     console.log('\nAUDIENCE: three phones, the landing page, and the stream overlay');
@@ -185,18 +185,28 @@ async function newPage(browser, label, viewport) {
     check(true, 'the stream overlay also shows the join line on standby');
 
     // ================================================================ ROUND 1
-    console.log('\nROUND 1 - HOST: draw topic & sides');
+    console.log("\nROUND 1 - HOST: draw this week's topic (a week before the show)");
     await clickPrimary();
-    await title('Topic locked in');
-    check(await visible(host, '#table-card'), 'host can see the topic before the reveal');
+    await title('Topic sent');
+    check(await visible(host, '#table-card'), 'host can see the topic');
     const prompt = await text(host, '#table-prompt');
     const explainer = await text(host, '#table-explainer');
     check(prompt.length > 5 && explainer.length > 10, `host sees the question and its explainer ("${prompt}")`);
-    check((await text(host, '#table-visibility')).includes('Only you'), 'host is told the audience cannot see it yet');
+    check((await text(host, '#table-visibility')).includes("audience can't"), 'host is told the audience cannot see it yet');
+    for (const p of [alice, bob]) await waitFor(p, () => !document.querySelector('#topic-card').hidden);
+    check((await text(alice, '#topic-prompt')) === prompt, 'contestants see the topic as soon as it is drawn');
+    check((await text(alice, '#banner-headline')) === "This week's topic is in", 'and are told to prep both sides');
+    check((await alice.$$('#topic-sides li')).length === 3 && !(await visible(alice, '#side-grid')), 'they see both stances, but no side of their own yet');
+    check(!(await visible(voters[0], '#overlay-topic')) && !(await visible(overlay, '#overlay-topic')), 'the audience and overlay still cannot see the topic');
+    await shot(alice, 'alice-topic-early');
+
+    console.log('\nROUND 1 - HOST: show day - the cauldron assigns sides');
+    await clickPrimary();
+    await title('Sides chosen');
     const sides = await host.$$eval('#table-sides li', (e) => e.map((l) => l.textContent));
     check(sides.length === 2 && sides.every((s) => /Alice|Bob/.test(s)), 'host sees who argues which side');
-    await waitFor(alice, () => document.querySelector('#banner-headline').textContent.includes('Topic locked in'));
-    check(!(await visible(alice, '#topic-card')) && !(await visible(alice, '#side-grid')), 'contestants cannot see the topic or sides yet');
+    await waitFor(alice, () => document.querySelector('#banner-headline').textContent.includes('chosen sides'));
+    check(!(await visible(alice, '#side-grid')), 'contestants cannot see the sides until the reveal');
     await shot(host, 'host-locked');
 
     console.log('\nROUND 1 - HOST: reveal');
@@ -213,7 +223,7 @@ async function newPage(browser, label, viewport) {
     check((await text(alice, '#their-position')) === bobSide, "Alice's 'your opponent argues' is Bob's side");
     await shot(alice, 'alice-revealed');
 
-    console.log('\nROUND 1 - HOST: start preparation (2 min) and check the timers tick');
+    console.log('\nROUND 1 - HOST: open the opening vote (2 min) and check the timers tick');
     await title('Topic revealed'); // the panel redraws a beat after the contestants' screens do
     await setMinutes(2);
     await clickPrimary();
@@ -224,7 +234,7 @@ async function newPage(browser, label, viewport) {
     await sleep(2200);
     const t2 = await text(alice, '#timer-display');
     check(/^\d\d:\d\d$/.test(t2) && t1 !== t2, `the contestant countdown ticks (${t1} -> ${t2})`);
-    check((await text(alice, '#timer-label')) === 'Prep time left', 'timer is labelled for prep');
+    check((await text(alice, '#timer-label')) === 'Opening vote closes in', 'timer is labelled for the opening vote');
     check(/^\d\d:\d\d$/.test(await text(host, '#timer-display')), 'the host timer shows a running countdown');
     await alice.type('#private-notes', 'my prep notes');
     await host.click('#btn-timer-toggle');
@@ -250,16 +260,16 @@ async function newPage(browser, label, viewport) {
 
     // ---------------------------------------------------------- opening vote
     console.log('\nROUND 1 - AUDIENCE: opening vote');
-    await title('Preparation and opening vote'); // voting opened the moment prep started
+    await title('Opening vote');
     for (const v of voters) await waitFor(v, () => !document.querySelector('#vote-card').hidden);
-    check(true, 'all three audience phones get the vote buttons the moment prep starts');
+    check(true, 'all three audience phones get the vote buttons the moment the opening vote opens');
     check((await text(voters[0], '#vote-question')).includes('right now'), 'the opening question is worded for the opening poll');
     const sideAText = await text(voters[0], '#vote-a-text');
     const sideBText = await text(voters[0], '#vote-b-text');
     check(sideAText.length > 0 && sideBText.length > 0 && sideAText !== sideBText, `vote buttons carry the two sides ("${sideAText}" / "${sideBText}")`);
     check((await text(voters[0], '#vote-a-by')).startsWith('argued by'), 'each side says who argues it');
-    check((await text(alice, '#banner-body')).includes('voting on their phones'), 'contestants are told the audience is voting while they prepare');
-    check((await text(alice, '#banner-headline')) === 'Prep time' && (await visible(alice, '#timer-card')), 'and they still see the prep clock');
+    check((await text(alice, '#banner-body')).includes('voting before hearing any arguments'), 'contestants are told the audience is voting');
+    check((await text(alice, '#banner-headline')) === 'Opening vote' && (await visible(alice, '#timer-card')), 'and they see the vote clock');
     await waitFor(overlay, () => !document.querySelector('#overlay-poll-indicator').hidden);
     check((await text(overlay, '#overlay-poll-join')).includes(code), 'the stream overlay shows where to vote, with the room code');
     check((await text(overlay, '#overlay-poll-count')).includes('Waiting'), 'and that no votes are in yet');
@@ -334,27 +344,29 @@ async function newPage(browser, label, viewport) {
     const choices = await host.$$eval('#now-alternatives button', (b) => b.map((x) => x.dataset.action).join(','));
     check(choices === 'sameContestants,archive', `and, alongside it, same contestants / archive (${choices})`);
     await host.click('#now-alternatives [data-action="sameContestants"]');
-    await title('Invite your contestants');
-    check(!(await host.$eval('#btn-primary', (b) => b.disabled)), 'contestants are still joined, so dealing is immediately available');
-    await waitFor(alice, () => document.querySelector('#banner-headline').textContent.includes('lobby'));
+    await title('Invite contestants');
+    await waitFor(alice, () => document.querySelector('#banner-headline').textContent === "You're in");
     check((await alice.$eval('#private-notes', (t) => t.value)) === '', 'notes start fresh for the new round');
     await waitFor(voters[0], () => !document.querySelector('#overlay-standby').hidden);
     check(true, 'the audience screens go back to standby');
 
     await clickPrimary();
-    await title('Topic locked in');
+    await title('Topic sent');
+    check(!(await host.$eval('#btn-primary', (b) => b.disabled)), 'contestants are still joined, so sides can be assigned straight away');
+    await clickPrimary();
+    await title('Sides chosen');
     const sides2 = await host.$$eval('#table-sides li', (e) => e.map((l) => l.textContent));
     await clickPrimary();
     await title('Topic revealed');
     await setMinutes(1);
     await clickPrimary();
-    await title('Preparation and opening vote');
+    await title('Opening vote');
 
     allow409 += 1;
     await clickPrimary(); // no votes were cast
     await waitFor(host, () => !document.querySelector('#now-error').hidden);
     check((await text(host, '#now-error')).includes('No votes yet'), 'closing an empty poll is refused with a clear message');
-    check((await text(host, '#now-title')) === 'Preparation and opening vote', 'and the host stays on the same step');
+    check((await text(host, '#now-title')) === 'Opening vote', 'and the host stays on the same step');
 
     await host.click('#manual-poll summary');
     await host.type('#poll-a', '70');
@@ -400,8 +412,10 @@ async function newPage(browser, label, viewport) {
     await host.goto(`${CLIENT}/host.html`);
     await waitFor(host, () => /archived/.test(document.querySelector('#now-title').textContent));
     await clickPrimary(); // New round, new contestants
-    await title('Invite your contestants');
-    check(await host.$eval('#btn-primary', (b) => b.disabled), 'with the seats cleared, dealing is locked until both join again');
+    await title('Invite contestants');
+    await clickPrimary(); // next week's topic
+    await title('Topic sent');
+    check(await host.$eval('#btn-primary', (b) => b.disabled), 'with the seats cleared, assigning sides is locked until both join again');
     check((await text(host, '#now-hint')).includes('Waiting for'), 'and the hint says who the host is waiting for');
 
     for (const [page, name] of [[alice, 'Carol'], [bob, 'Dave']]) {

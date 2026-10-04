@@ -44,7 +44,7 @@ test('a turnout figure for a different poll is not shown', () => {
 
 test('contestants are told the audience is voting, with turnout', () => {
   const opening = describePhase({ phase: 'PREPARATION', pollTotal: 3 });
-  assert.match(opening.body, /voting on their phones/);
+  assert.match(opening.body, /voting before hearing any arguments/);
   assert.match(opening.body, /3 votes in so far/);
 
   const closing = describePhase({ phase: 'CLOSING_POLL', pollTotal: 1 });

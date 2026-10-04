@@ -2,7 +2,7 @@
 // the wording and the "did I win" logic can be checked without a browser
 // (see client/tests/copy.test.mjs).
 
-export const STEPS = ['Lobby', 'Locked', 'Reveal', 'Prep + vote', 'Debate', 'Final vote', 'Results'];
+export const STEPS = ['Topic', 'Sides', 'Reveal', 'Opening vote', 'Debate', 'Final vote', 'Results'];
 
 const PHASE_STEP = {
   LOBBY: 0,
@@ -79,11 +79,11 @@ export function describeResults({ mySide, winner, results }) {
 
 /**
  * @param ctx { phase, mySide ('A'|'B'|null), opponentName, opponentJoined,
- *              winner, results }
+ *              winner, results, hasTopic (this week's topic is out) }
  * @returns { step, headline, body, tone, timerLabel }
  */
 export function describePhase(ctx) {
-  const { phase, opponentName, opponentJoined, pollTotal, voided } = ctx;
+  const { phase, opponentName, opponentJoined, pollTotal, voided, hasTopic } = ctx;
   const votes = pollTotal > 0 ? ` ${pollTotal} vote${pollTotal === 1 ? '' : 's'} in so far.` : '';
   const step = stepIndex(phase);
 
@@ -100,38 +100,47 @@ export function describePhase(ctx) {
 
   switch (phase) {
     case 'LOBBY':
+      if (hasTopic) {
+        return {
+          step,
+          tone: 'go',
+          headline: "This week's topic is in",
+          body: "Prep both sides - on show day the cauldron decides which one you argue. Keep it to yourself: the audience doesn't see the topic until the host reveals it on stream.",
+          timerLabel: null,
+        };
+      }
       return {
         step,
         tone: 'wait',
-        headline: "You're in the lobby",
+        headline: "You're in",
         body: opponentJoined
-          ? `${opponentName} is here too. Waiting for the host to draw a topic.`
-          : 'Waiting for your opponent to join. Then the host will draw a topic.',
+          ? `${opponentName} is here too. The host will send this week's topic here, about a week before the show.`
+          : "Waiting for your opponent to join. The host will send this week's topic here, about a week before the show.",
         timerLabel: null,
       };
     case 'TOPIC_LOCKED':
       return {
         step,
         tone: 'wait',
-        headline: 'Topic locked in',
-        body: 'The host has chosen a topic. It is revealed in a moment - get ready.',
+        headline: 'The cauldron has chosen sides',
+        body: 'Who argues what is decided. It is revealed in a moment - get ready.',
         timerLabel: null,
       };
     case 'REVEAL':
       return {
         step,
         tone: 'go',
-        headline: 'The topic is revealed',
-        body: `Read the question, then check which side you drew. You argue that side even if you disagree with it. Prep starts soon.`,
+        headline: 'Sides revealed',
+        body: `Check which side you drew. You argue that side even if you disagree with it. The opening vote comes next.`,
         timerLabel: null,
       };
     case 'PREPARATION':
       return {
         step,
         tone: 'go',
-        headline: 'Prep time',
-        body: `Build your argument for your side. Jot ideas in the notes box below. Chat is voting on their phones while you prepare - that sets the starting point. The debate starts when the host says so.${votes}`,
-        timerLabel: 'Prep time left',
+        headline: 'Opening vote',
+        body: `Chat is voting before hearing any arguments - that sets the starting point. Use the moment to plan your opening. The debate starts when the host says so.${votes}`,
+        timerLabel: 'Opening vote closes in',
       };
     case 'DEBATE':
       return {
@@ -193,7 +202,7 @@ export function describeInviteError(message = '') {
     return {
       kind: 'expired',
       title: 'This invite has expired',
-      text: 'Invite links only last a day. Ask the host for a new one.',
+      text: 'Invite links last two weeks. Ask the host for a new one.',
       flourish: 'The Cauldron does not wait forever.',
     };
   }

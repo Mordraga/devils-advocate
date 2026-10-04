@@ -17,8 +17,17 @@ test('no session: the only step is to start one', () => {
   assert.equal(d.index, -1);
 });
 
-test('lobby: cannot deal until both contestants have joined', () => {
-  const h = host('LOBBY', { contestants: [seat('one', 'Alice', true), seat('two', 'Contestant Two', false)] });
+const drawn = { prompt: 'Is a hot dog a sandwich?', sideA: 'Yes', sideB: 'No' };
+
+test('lobby, a week out: draw the topic, no need to wait for anyone', () => {
+  const d = describe(host('LOBBY', { contestants: [seat('one', 'Contestant One', false), seat('two', 'Contestant Two', false)] }));
+  assert.equal(d.primary.id, 'drawTopic');
+  assert.equal(d.primary.disabled, false);
+  assert.equal(d.showInvites, true);
+});
+
+test('lobby, topic sent: cannot assign sides until both contestants have joined', () => {
+  const h = host('LOBBY', { topic: drawn, contestants: [seat('one', 'Alice', true), seat('two', 'Contestant Two', false)] });
   const d = describe(h);
   assert.equal(d.primary.id, 'deal');
   assert.equal(d.primary.disabled, true);
@@ -28,19 +37,20 @@ test('lobby: cannot deal until both contestants have joined', () => {
 });
 
 test('lobby: skipping the wait unlocks the button', () => {
-  const h = host('LOBBY', { contestants: [seat('one', 'Alice', true), seat('two', 'x', false)] });
+  const h = host('LOBBY', { topic: drawn, contestants: [seat('one', 'Alice', true), seat('two', 'x', false)] });
   assert.equal(describe(h, { skipWait: true }).primary.disabled, false);
 });
 
 test('lobby: enabled once everyone is in', () => {
-  const d = describe(host('LOBBY'));
+  const d = describe(host('LOBBY', { topic: drawn }));
+  assert.equal(d.primary.id, 'deal');
   assert.equal(d.primary.disabled, false);
   assert.equal(d.canSkipWait, false);
 });
 
 test('each phase has exactly one primary action, in order', () => {
   const phases = ['LOBBY', 'TOPIC_LOCKED', 'REVEAL', 'PREPARATION', 'DEBATE', 'CLOSING_POLL', 'RESULTS'];
-  const ids = phases.map((p) => describe(host(p)).primary.id);
+  const ids = phases.map((p) => describe(host(p, { topic: drawn })).primary.id);
   assert.deepEqual(ids, ['deal', 'reveal', 'startPrep', 'startDebate', 'closePoll', 'finish', 'newRound']);
 });
 
@@ -51,7 +61,7 @@ test('step index follows the phase; ARCHIVED shares the results step', () => {
 });
 
 test('phases that need inputs ask for them', () => {
-  assert.equal(describe(host('REVEAL')).minutes.key, 'prep');
+  assert.equal(describe(host('REVEAL')).minutes.key, 'vote');
   assert.equal(describe(host('PREPARATION')).poll, 'opening');
   assert.equal(describe(host('PREPARATION')).minutes.key, 'debate');
   assert.equal(describe(host('CLOSING_POLL')).poll, 'closing');

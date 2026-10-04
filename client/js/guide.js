@@ -7,10 +7,10 @@
 // the right sequence of API calls.
 
 export const STEPS = [
-  'Invite',
-  'Locked',
+  'Invite & topic',
+  'Sides',
   'Reveal',
-  'Prep + opening vote',
+  'Opening vote',
   'Debate',
   'Closing vote',
   'Results',
@@ -27,7 +27,8 @@ const PHASE_STEP = {
   ARCHIVED: 6,
 };
 
-export const DEFAULT_MINUTES = { prep: 15, debate: 10 };
+// The opening vote is short: contestants have had the topic for a week.
+export const DEFAULT_MINUTES = { vote: 3, debate: 10 };
 
 const SEAT_LABEL = { one: 'Contestant One', two: 'Contestant Two' };
 
@@ -98,20 +99,39 @@ export function describe(host, ui = {}) {
   if (host.round.status === 'void' && phase !== 'ARCHIVED') return endOfRound(host, base);
 
   switch (phase) {
+    // A week before the show: invite the contestants and send them the topic
+    // (they see it on their page; the audience doesn't). On show day: sides.
     case 'LOBBY': {
+      if (!host.topic) {
+        return {
+          ...base,
+          title: "Invite contestants & send this week's topic",
+          blurb:
+            "Send each contestant their invite link - they choose their own name when they join. Draw the topic about a week before the show: contestants see it on their page straight away, the audience doesn't until you reveal it on stream.",
+          audience: 'The overlay shows the cauldron on standby.',
+          showInvites: true,
+          primary: {
+            id: 'drawTopic',
+            label: "Draw this week's topic",
+            disabled: false,
+            hint: 'Sides are not chosen yet - the cauldron assigns those live on show day.',
+          },
+        };
+      }
       const waiting = host.contestants.filter((c) => !c.joined).map(seatName);
       const everyoneIn = waiting.length === 0;
       const canGo = everyoneIn || ui.skipWait;
       return {
         ...base,
-        title: 'Invite your contestants',
-        blurb: 'Send each contestant their invite link. They choose their own name when they join.',
-        audience: 'The overlay shows the cauldron on standby.',
+        title: 'Topic sent - see you on show day',
+        blurb:
+          'Contestants can see the topic and prep both sides all week. On show day, once both are here, the cauldron assigns who argues what.',
+        audience: 'The overlay shows the cauldron on standby. The topic stays hidden.',
         showInvites: true,
         canSkipWait: !everyoneIn,
         primary: {
           id: 'deal',
-          label: 'Draw topic & sides',
+          label: 'Show day: assign sides',
           disabled: !canGo,
           hint: everyoneIn
             ? 'Both contestants are in.'
@@ -124,8 +144,8 @@ export function describe(host, ui = {}) {
     case 'TOPIC_LOCKED':
       return {
         ...base,
-        title: 'Topic locked in',
-        blurb: 'The topic and sides are chosen, and only you can see them. Tell the contestants it is coming, then reveal.',
+        title: 'Sides chosen',
+        blurb: 'The cauldron has picked who argues what, and only you can see it. Reveal the topic and sides on stream.',
         audience: 'Nothing yet - the topic is still hidden.',
         primary: { id: 'reveal', label: 'Reveal topic & sides', disabled: false },
       };
@@ -133,17 +153,17 @@ export function describe(host, ui = {}) {
       return {
         ...base,
         title: 'Topic revealed',
-        blurb: 'Everyone can see the topic and who argues what. Give them a moment to read, then start prep.',
+        blurb: 'Everyone can see the topic and who argues what. Give chat a moment to read, then open the opening vote.',
         audience: 'The topic and both sides.',
-        minutes: { key: 'prep', label: 'Prep minutes', value: DEFAULT_MINUTES.prep },
-        primary: { id: 'startPrep', label: 'Start preparation', disabled: false },
+        minutes: { key: 'vote', label: 'Opening vote minutes', value: DEFAULT_MINUTES.vote },
+        primary: { id: 'startPrep', label: 'Open the opening vote', disabled: false },
       };
     case 'PREPARATION':
       return {
         ...base,
-        title: 'Preparation and opening vote',
-        blurb: 'Contestants prepare while the audience votes on the watch page. When prep is over, close voting and start the debate - the vote is recorded as the starting point the winner is measured from.',
-        audience: 'The sides and the prep countdown, plus vote buttons on the watch page and the room code and vote count on the overlay.',
+        title: 'Opening vote',
+        blurb: 'The audience votes on the watch page before hearing any arguments. Close voting to start the debate - the vote is recorded as the starting point the winner is measured from.',
+        audience: 'The sides and the countdown, plus vote buttons on the watch page and the room code and vote count on the overlay.',
         timer: true,
         poll: 'opening',
         minutes: { key: 'debate', label: 'Debate minutes', value: DEFAULT_MINUTES.debate },
@@ -198,7 +218,7 @@ function endOfRound(host, base) {
     {
       id: 'sameContestants',
       label: 'Same contestants, new topic',
-      hint: 'Keeps both names. You draw a fresh topic.',
+      hint: "Keeps both names. You draw next week's topic.",
     },
   ];
   if (!archived) {

@@ -14,7 +14,7 @@ test('every phase gives a headline and body', () => {
 
 test('timers are labelled only for the phases that have one', () => {
   const label = (phase) => describePhase({ phase }).timerLabel;
-  assert.equal(label('PREPARATION'), 'Prep time left');
+  assert.equal(label('PREPARATION'), 'Opening vote closes in');
   assert.equal(label('DEBATE'), 'Debate time left');
   assert.equal(label('REVEAL'), null);
   assert.equal(label('CLOSING_POLL'), null);
@@ -27,6 +27,12 @@ test('a voided round tells contestants plainly, in any phase', () => {
     assert.match(d.body, /doesn't count/);
     assert.equal(d.timerLabel, null); // no clock for a round that isn't going ahead
   }
+});
+
+test('lobby: once the topic is out, prep both sides', () => {
+  const d = describePhase({ phase: 'LOBBY', hasTopic: true, opponentJoined: true, opponentName: 'Bob' });
+  assert.equal(d.headline, "This week's topic is in");
+  assert.match(d.body, /Prep both sides/);
 });
 
 test('lobby tells you whether your opponent is here', () => {
